@@ -2,6 +2,7 @@ package dbtree
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/SavingFrame/dbettier/internal/database"
@@ -46,7 +47,6 @@ func (m DBTreeModel) View() string {
 			return itemStyle
 		})
 	for i, db := range m.databases {
-		// if connected use green mark
 		dbConn := database.Connections[i]
 		var mark string
 		if dbConn.Connected {
@@ -55,8 +55,18 @@ func (m DBTreeModel) View() string {
 			mark = "✘"
 		}
 		t.Child(fmt.Sprintf("%s %s@%s", mark, db.name, db.host))
+		// TODO: I Think we can create FlatTree in the model and use it for focusIndex
 		if len(db.schemas) > 0 {
-			schemaTree := tree.New().ItemStyle(itemStyle)
+			schemaTree := tree.New().ItemStyle(itemStyle).
+				ItemStyleFunc(func(c tree.Children, i int) lipgloss.Style {
+					node := c.At(i)
+					log.Printf("Node at index %d: %+v", i, node.Children())
+					if m.focusIndex == i {
+						return focusedStyle
+					}
+					return itemStyle
+				})
+
 			for _, schema := range db.schemas {
 				schemaTree.Child(schema.name)
 			}

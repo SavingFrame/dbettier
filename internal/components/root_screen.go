@@ -1,7 +1,6 @@
 package components
 
 import (
-	"log"
 	"time"
 
 	"github.com/SavingFrame/dbettier/internal/components/dbtree"

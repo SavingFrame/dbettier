@@ -11,6 +11,20 @@ import (
 func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case handleDBSelectionResult:
+		m.databases[m.focusIndex].schemas = make([]*databaseSchemaNode, 0)
+		var flatNodes []*flatTreeNode
+		for _, schema := range msg.schemas {
+			m.databases[m.focusIndex].schemas = append(m.databases[m.focusIndex].schemas, &databaseSchemaNode{
+				name: schema.Name,
+			})
+			flatNodes = append(flatNodes, &flatTreeNode{
+				name:       schema.Name,
+				typeOfNode: "schema",
+			})
+		}
+		m.flatNodes = insertNodesAfter(m.flatNodes, m.focusIndex, flatNodes)
+		return m, msg.notification
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
@@ -18,14 +32,7 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "k", "up", "j", "down":
 			m, cmd = m.handleNavigation(msg)
 		case "enter":
-			var err error
-			var notification tea.Cmd
-			m, notification, err = m.handleDBSelection(m.focusIndex)
-			if err != nil {
-				cmd = notifications.ShowInfo(err.Error())
-			} else {
-				cmd = notification
-			}
+			return m, handleDBSelection(m.focusIndex)
 		}
 	}
 	return m, cmd
@@ -46,23 +53,34 @@ func (m DBTreeModel) handleNavigation(msg tea.KeyMsg) (DBTreeModel, tea.Cmd) {
 	return m, notifications.ShowInfo(fmt.Sprintf("Focused on item %d", m.focusIndex))
 }
 
-func (m DBTreeModel) handleDBSelection(i int) (DBTreeModel, tea.Cmd, error) {
-	db := database.Connections[i]
-	if !db.Connected {
-		err := db.Connect()
-		if err != nil {
-			return m, nil, err
+type handleDBSelectionResult struct {
+	notification tea.Cmd
+	schemas      []*database.Schema
+}
+
+func handleDBSelection(i int) tea.Cmd {
+	return func() tea.Msg {
+		db := database.Connections[i]
+		if !db.Connected {
+			err := db.Connect()
+			if err != nil {
+				// return m, nil, err
+				return handleDBSelectionResult{notification: notifications.ShowError(err.Error())}
+			}
 		}
+		schemas, err := db.ParseSchemas()
+		if err != nil {
+			return handleDBSelectionResult{notification: notifications.ShowError(err.Error())}
+		}
+		return handleDBSelectionResult{notification: notifications.ShowInfo("Successfully connected to database."), schemas: schemas}
 	}
-	schemas, err := db.ParseSchemas()
-	if err != nil {
-		return m, nil, err
-	}
-	m.databases[i].schemas = make([]*databaseSchemaNode, 0)
-	for _, schema := range schemas {
-		m.databases[i].schemas = append(m.databases[i].schemas, &databaseSchemaNode{
-			name: schema.Name,
-		})
-	}
-	return m, notifications.ShowInfo("Successfully connected to database."), nil
+}
+
+func insertNodesAfter(slice []*flatTreeNode, index int, nodes []*flatTreeNode) []*flatTreeNode {
+	insertPos := index + 1
+	result := make([]*flatTreeNode, 0, len(slice)+len(nodes))
+	result = append(result, slice[:insertPos]...)
+	result = append(result, nodes...)
+	result = append(result, slice[insertPos:]...)
+	return result
 }

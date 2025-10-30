@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"sort"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -30,6 +31,10 @@ func (db *DatabaseConnection) ParseSchemas() ([]*Schema, error) {
 		var name string
 		err := row.Scan(&name)
 		return NewSchema(name), err
+	})
+	// order "public" first
+	sort.SliceStable(schemas, func(i, j int) bool {
+		return schemas[i].Name == "public"
 	})
 	db.Schemas = schemas
 	return schemas, err
