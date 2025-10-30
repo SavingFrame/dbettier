@@ -2,55 +2,47 @@ package dbtree
 
 import "github.com/SavingFrame/dbettier/internal/database"
 
-// import tea "github.com/charmbracelet/bubbletea"
-
 type databaseSchemaNode struct {
 	name string
 }
 
 type databaseNode struct {
-	name    string
-	host    string
-	schemas []*databaseSchemaNode
+	name     string
+	host     string
+	schemas  []*databaseSchemaNode
+	expanded bool
 }
 
-type flatTreeNode struct {
-	typeOfNode string // "database" or "schema"
-	name       string
+// treeCursor represents the current focus position in the tree
+type treeCursor struct {
+	dbIndex     int
+	schemaIndex int // -1 if focused on database level
 }
 
 type DBTreeModel struct {
-	focusIndex int
-	databases  []*databaseNode
-	flatNodes  []*flatTreeNode
+	cursor    treeCursor
+	databases []*databaseNode
 }
 
 func DBTreeScreen() DBTreeModel {
 	var dbNodes []*databaseNode
-	var flatTree []*flatTreeNode
 	for _, db := range database.Connections {
 		dbNodes = append(dbNodes, &databaseNode{
-			name: db.Database,
-			host: db.Host,
-		})
-		flatTree = append(flatTree, &flatTreeNode{
-			typeOfNode: "database",
-			name:       db.Database,
+			name:     db.Database,
+			host:     db.Host,
+			expanded: false,
 		})
 	}
 	return DBTreeModel{
-		focusIndex: 0,
-		databases:  dbNodes,
-		flatNodes:  flatTree,
+		cursor: treeCursor{
+			dbIndex:     0,
+			schemaIndex: -1, // Start at database level
+		},
+		databases: dbNodes,
 	}
 }
 
-// TODO: Use flatTree for focusIndex management
-func (m DBTreeModel) totalFocusableItems() int {
-	// totalFocusableSchemas := 0
-	// for _, db := range m.databases {
-	// 	totalFocusableSchemas += len(db.schemas)
-	// }
-	// return len(database.Connections) + totalFocusableSchemas
-	return len(m.flatNodes)
+// isAtDatabaseLevel returns true if cursor is on a database (not a schema)
+func (c treeCursor) isAtDatabaseLevel() bool {
+	return c.schemaIndex == -1
 }

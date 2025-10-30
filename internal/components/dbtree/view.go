@@ -2,7 +2,6 @@ package dbtree
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/SavingFrame/dbettier/internal/database"
@@ -24,51 +23,54 @@ var (
 
 func (m DBTreeModel) View() string {
 	var b strings.Builder
+
 	t := tree.
 		Root("Databases:").
-		// Child(
-		// 	"Glossier",
-		// 	"Fenty Beauty",
-		// 	// tree.New().Child(
-		// 	// 	"Gloss Bomb Universal Lip Luminizer",
-		// 	// 	"Hot Cheeks Velour Blushlighter",
-		// 	// ),
-		// 	"Nyx",
-		// 	"Mac",
-		// 	"Milk",
-		// ).
 		Enumerator(tree.RoundedEnumerator).
 		EnumeratorStyle(enumeratorStyle).
-		RootStyle(rootStyle).
-		ItemStyleFunc(func(c tree.Children, i int) lipgloss.Style {
-			if m.focusIndex == i {
-				return focusedStyle
-			}
-			return itemStyle
-		})
-	for i, db := range m.databases {
-		dbConn := database.Connections[i]
+		RootStyle(rootStyle)
+
+	for dbIdx, db := range m.databases {
+		dbConn := database.Connections[dbIdx]
 		var mark string
 		if dbConn.Connected {
 			mark = "✔"
 		} else {
 			mark = "✘"
 		}
-		t.Child(fmt.Sprintf("%s %s@%s", mark, db.name, db.host))
-		// TODO: I Think we can create FlatTree in the model and use it for focusIndex
-		if len(db.schemas) > 0 {
-			schemaTree := tree.New().ItemStyle(itemStyle).
-				ItemStyleFunc(func(c tree.Children, i int) lipgloss.Style {
-					node := c.At(i)
-					log.Printf("Node at index %d: %+v", i, node.Children())
-					if m.focusIndex == i {
-						return focusedStyle
-					}
-					return itemStyle
-				})
 
-			for _, schema := range db.schemas {
-				schemaTree.Child(schema.name)
+		// Determine expand/collapse indicator
+		expandIndicator := ""
+		if len(db.schemas) > 0 {
+			if db.expanded {
+				expandIndicator = "▼ "
+			} else {
+				expandIndicator = "▶ "
+			}
+		}
+
+		// Render database with the correct style based on cursor
+		dbText := fmt.Sprintf("%s%s %s@%s", expandIndicator, mark, db.name, db.host)
+		isFocused := m.cursor.dbIndex == dbIdx && m.cursor.isAtDatabaseLevel()
+		if isFocused {
+			dbText = focusedStyle.Render(dbText)
+		} else {
+			dbText = itemStyle.Render(dbText)
+		}
+		t.Child(dbText)
+
+		// Render schemas only if expanded
+		if db.expanded && len(db.schemas) > 0 {
+			schemaTree := tree.New()
+			for schemaIdx, schema := range db.schemas {
+				schemaText := schema.name
+				isFocused := m.cursor.dbIndex == dbIdx && m.cursor.schemaIndex == schemaIdx
+				if isFocused {
+					schemaText = focusedStyle.Render(schemaText)
+				} else {
+					schemaText = itemStyle.Render(schemaText)
+				}
+				schemaTree.Child(schemaText)
 			}
 			t.Child(schemaTree)
 		}
