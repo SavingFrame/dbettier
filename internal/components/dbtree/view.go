@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/SavingFrame/dbettier/internal/database"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/tree"
@@ -31,7 +30,7 @@ func (m DBTreeModel) View() string {
 		RootStyle(rootStyle)
 
 	for dbIdx, db := range m.databases {
-		dbConn := database.Connections[dbIdx]
+		dbConn := m.registry.GetAll()[dbIdx]
 		var mark string
 		if dbConn.Connected {
 			mark = "✔"

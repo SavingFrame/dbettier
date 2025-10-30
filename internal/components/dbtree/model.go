@@ -22,11 +22,12 @@ type treeCursor struct {
 type DBTreeModel struct {
 	cursor    treeCursor
 	databases []*databaseNode
+	registry  *database.DBRegistry
 }
 
-func DBTreeScreen() DBTreeModel {
+func DBTreeScreen(registry *database.DBRegistry) DBTreeModel {
 	var dbNodes []*databaseNode
-	for _, db := range database.Connections {
+	for _, db := range registry.GetAll() {
 		dbNodes = append(dbNodes, &databaseNode{
 			name:     db.Database,
 			host:     db.Host,
@@ -39,6 +40,7 @@ func DBTreeScreen() DBTreeModel {
 			schemaIndex: -1, // Start at database level
 		},
 		databases: dbNodes,
+		registry:  registry,
 	}
 }
 

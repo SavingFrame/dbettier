@@ -15,9 +15,10 @@ type rootScreenModel struct {
 	notification *notifications.Notification
 	width        int
 	height       int
+	registry     *database.DBRegistry
 }
 
-func RootScreen() rootScreenModel {
+func RootScreen(registry *database.DBRegistry) rootScreenModel {
 	var rootModel tea.Model
 
 	// sample conditional logic to start with a specific screen
@@ -26,11 +27,11 @@ func RootScreen() rootScreenModel {
 	// this will allow us to modify the model's state in the View method
 	// if needed
 
-	if len(database.Connections) > 0 {
-		dbtreeScreen := dbtree.DBTreeScreen()
+	if registry.Count() > 0 {
+		dbtreeScreen := dbtree.DBTreeScreen(registry)
 		rootModel = &dbtreeScreen
 	} else {
-		screenOne := DBCreatorScreen()
+		screenOne := DBCreatorScreen(registry)
 		rootModel = &screenOne
 	}
 	// } else {
@@ -39,7 +40,8 @@ func RootScreen() rootScreenModel {
 	// }
 
 	return rootScreenModel{
-		model: rootModel,
+		model:    rootModel,
+		registry: registry,
 	}
 }
 

@@ -27,8 +27,13 @@ func main() {
 	cleanup := setupDebugLog()
 	defer cleanup()
 
-	database.LoadConnections()
-	if _, err := tea.NewProgram(components.RootScreen(), tea.WithAltScreen()).Run(); err != nil {
+	// Create database registry and load connections
+	registry := database.NewDBRegistry()
+	if err := registry.LoadFromFile(".connections.json"); err != nil {
+		fmt.Println("Warning: could not load connections:", err)
+	}
+
+	if _, err := tea.NewProgram(components.RootScreen(registry), tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error while running program:", err)
 		os.Exit(1)
 	}

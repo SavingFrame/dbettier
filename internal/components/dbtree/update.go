@@ -108,11 +108,11 @@ func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
 	if m.cursor.isAtDatabaseLevel() {
 		// Toggle expand/collapse or connect if not connected
 		currentDB := m.databases[m.cursor.dbIndex]
-		dbConn := database.Connections[m.cursor.dbIndex]
+		dbConn := m.registry.GetAll()[m.cursor.dbIndex]
 
 		if !dbConn.Connected {
 			// Connect and fetch schemas
-			return m, handleDBSelection(m.cursor.dbIndex)
+			return m, handleDBSelection(m.cursor.dbIndex, m.registry)
 		} else {
 			// Toggle expand
 			currentDB.expanded = !currentDB.expanded
@@ -135,11 +135,11 @@ func (m DBTreeModel) collapseNode() {
 func (m DBTreeModel) expandNode() (DBTreeModel, tea.Cmd) {
 	if m.cursor.isAtDatabaseLevel() {
 		currentDB := m.databases[m.cursor.dbIndex]
-		dbConn := database.Connections[m.cursor.dbIndex]
+		dbConn := m.registry.GetAll()[m.cursor.dbIndex]
 
 		if !dbConn.Connected {
 			// Connect and fetch schemas
-			return m, handleDBSelection(m.cursor.dbIndex)
+			return m, handleDBSelection(m.cursor.dbIndex, m.registry)
 		} else {
 			// Expand
 			currentDB.expanded = true
@@ -153,9 +153,9 @@ type handleDBSelectionResult struct {
 	schemas      []*database.Schema
 }
 
-func handleDBSelection(i int) tea.Cmd {
+func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 	return func() tea.Msg {
-		db := database.Connections[i]
+		db := registry.GetAll()[i]
 		if !db.Connected {
 			err := db.Connect()
 			if err != nil {

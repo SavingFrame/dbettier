@@ -8,14 +8,20 @@ import (
 )
 
 type Schema struct {
-	Name string
+	Name     string
+	database *Database
 }
 
-func NewSchema(name string) *Schema {
-	return &Schema{Name: name}
+func NewSchema(name string, db *Database) *Schema {
+	return &Schema{Name: name, database: db}
 }
 
-func (db *DatabaseConnection) ParseSchemas() ([]*Schema, error) {
+// GetDatabase returns the parent database connection
+func (s *Schema) GetDatabase() *Database {
+	return s.database
+}
+
+func (db *Database) ParseSchemas() ([]*Schema, error) {
 	if !db.Connected {
 		if err := db.Connect(); err != nil {
 			return nil, err
@@ -30,7 +36,7 @@ func (db *DatabaseConnection) ParseSchemas() ([]*Schema, error) {
 	schemas, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*Schema, error) {
 		var name string
 		err := row.Scan(&name)
-		return NewSchema(name), err
+		return NewSchema(name, db), err
 	})
 	// order "public" first
 	sort.SliceStable(schemas, func(i, j int) bool {

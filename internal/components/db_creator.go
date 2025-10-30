@@ -34,11 +34,13 @@ type DBCreatorModel struct {
 	cursorMode   cursor.Mode
 	dbTestStatus string
 	err          string
+	registry     *database.DBRegistry
 }
 
-func DBCreatorScreen() DBCreatorModel {
+func DBCreatorScreen(registry *database.DBRegistry) DBCreatorModel {
 	m := DBCreatorModel{
-		inputs: make([]textinput.Model, 5),
+		inputs:   make([]textinput.Model, 5),
+		registry: registry,
 	}
 
 	var t textinput.Model
@@ -130,7 +132,7 @@ func (m DBCreatorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					fmt.Println("Invalid port number")
 				}
-				return m, createDatabase(m.inputs[0].Value(), m.inputs[2].Value(), m.inputs[3].Value(), portInt, m.inputs[4].Value())
+				return m, createDatabase(m.inputs[0].Value(), m.inputs[2].Value(), m.inputs[3].Value(), portInt, m.inputs[4].Value(), m.registry)
 			}
 			if s == "enter" && m.focusIndex == 6 { // Test Connection button
 				port := m.inputs[1].Value()
@@ -200,7 +202,7 @@ type (
 func (e errMsg) Error() string { return e.err.Error() }
 func testDatabase(host, username, password string, port int, db string) tea.Cmd {
 	return func() tea.Msg {
-		conn := database.NewDatabaseConnection(host, username, password, port, db)
+		conn := database.NewDatabase(host, username, password, port, db)
 		_, result := conn.Test()
 		return testDatabaseResult(result)
 	}
@@ -208,10 +210,10 @@ func testDatabase(host, username, password string, port int, db string) tea.Cmd 
 
 type createDatabaseResult bool
 
-func createDatabase(host, username, password string, port int, db string) tea.Cmd {
+func createDatabase(host, username, password string, port int, db string, registry *database.DBRegistry) tea.Cmd {
 	return func() tea.Msg {
-		conn := database.NewDatabaseConnection(host, username, password, port, db)
-		err := conn.SaveAndConnect()
+		conn := database.NewDatabase(host, username, password, port, db)
+		err := conn.SaveAndConnect(registry, ".connections.json")
 		if err != nil {
 			return errMsg{err}
 		}
