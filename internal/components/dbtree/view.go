@@ -21,8 +21,6 @@ var (
 )
 
 func (m DBTreeModel) View() string {
-	var b strings.Builder
-
 	t := tree.
 		Root("Databases:").
 		Enumerator(tree.RoundedEnumerator).
@@ -50,7 +48,7 @@ func (m DBTreeModel) View() string {
 
 		// Render database with the correct style based on cursor
 		dbText := fmt.Sprintf("%s%s %s@%s", expandIndicator, mark, db.name, db.host)
-		isFocused := m.cursor.dbIndex == dbIdx && m.cursor.isAtDatabaseLevel()
+		isFocused := m.cursor.dbIndex() == dbIdx && m.cursor.isAtDatabaseLevel()
 		if isFocused {
 			dbText = focusedStyle.Render(dbText)
 		} else {
@@ -62,20 +60,55 @@ func (m DBTreeModel) View() string {
 		if db.expanded && len(db.schemas) > 0 {
 			schemaTree := tree.New()
 			for schemaIdx, schema := range db.schemas {
-				schemaText := schema.name
-				isFocused := m.cursor.dbIndex == dbIdx && m.cursor.schemaIndex == schemaIdx
+				// Determine expand/collapse indicator for schema
+				expandIndicator := ""
+				if len(schema.tables) > 0 {
+					if schema.expanded {
+						expandIndicator = "▼ "
+					} else {
+						expandIndicator = "▶ "
+					}
+				}
+
+				schemaText := expandIndicator + schema.name
+				isFocused := m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx
 				if isFocused {
 					schemaText = focusedStyle.Render(schemaText)
 				} else {
 					schemaText = itemStyle.Render(schemaText)
 				}
 				schemaTree.Child(schemaText)
+				if schema.expanded && len(schema.tables) > 0 {
+					tableTree := tree.New()
+					for tableIdx, table := range schema.tables {
+						tableText := table.name
+						isFocused := m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.tableIndex() == tableIdx
+						if isFocused {
+							tableText = focusedStyle.Render(tableText)
+						} else {
+							tableText = itemStyle.Render(tableText)
+						}
+						tableTree.Child(tableText)
+					}
+					schemaTree.Child(tableTree)
+				}
 			}
 			t.Child(schemaTree)
 		}
 	}
 
-	b.WriteString(t.String())
-	b.WriteString("\n\n")
-	return b.String()
+	fullContent := t.String()
+	// TODO: This is probably not the best way to cut off content.
+	// I think we shouldn't calculate everything and then cut lines,
+	// but rather calculate only what fits in the window.
+	lines := strings.Split(fullContent, "\n")
+	if m.scrollOffset >= len(lines) {
+		m.scrollOffset = max(0, len(lines)-m.windowHeight)
+	}
+	if len(lines) > m.windowHeight {
+		end := min(m.scrollOffset+m.windowHeight, len(lines))
+		lines = lines[m.scrollOffset:end]
+	}
+
+	return strings.Join(lines, "\n")
 }
