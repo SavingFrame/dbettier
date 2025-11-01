@@ -13,18 +13,30 @@ const (
 	viewTableType
 )
 
-type Table struct {
-	Name     string
-	Type     tableType
-	database *Database
+func (t tableType) String() string {
+	switch t {
+	case baseTableType:
+		return "BASE TABLE"
+	case viewTableType:
+		return "VIEW"
+	default:
+		return "UNKNOWN"
+	}
 }
 
-func NewTable(name string, db *Database, tableType tableType) *Table {
-	return &Table{Name: name, database: db, Type: tableType}
+type Table struct {
+	Name    string
+	Type    tableType
+	Schema  *Schema
+	Columns []*Column
+}
+
+func NewTable(name string, schema *Schema, tableType tableType) *Table {
+	return &Table{Name: name, Schema: schema, Type: tableType}
 }
 
 func (s *Schema) LoadTables() ([]*Table, error) {
-	db := s.database
+	db := s.Database
 	if db.Connected {
 		db.Connect()
 	}
@@ -48,7 +60,17 @@ func (s *Schema) LoadTables() ([]*Table, error) {
 		case "VIEW":
 			tableType = viewTableType
 		}
-		return NewTable(tableName, s.database, tableType), nil
+		return NewTable(tableName, s, tableType), nil
 	})
+	s.Tables = tables
 	return tables, err
+}
+
+func (s *Schema) FindTable(name string) *Table {
+	for _, table := range s.Tables {
+		if table.Name == name {
+			return table
+		}
+	}
+	return nil
 }

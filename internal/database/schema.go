@@ -9,16 +9,17 @@ import (
 
 type Schema struct {
 	Name     string
-	database *Database
+	Database *Database
+	Tables   []*Table
 }
 
 func NewSchema(name string, db *Database) *Schema {
-	return &Schema{Name: name, database: db}
+	return &Schema{Name: name, Database: db}
 }
 
 // GetDatabase returns the parent database connection
 func (s *Schema) GetDatabase() *Database {
-	return s.database
+	return s.Database
 }
 
 func (db *Database) ParseSchemas() ([]*Schema, error) {

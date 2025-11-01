@@ -67,6 +67,44 @@ The application follows a component-based architecture:
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) - Style and layout
 - Go PostgreSQL driver (planned)
 
+## Testing
+
+The project uses testcontainers-go for integration tests with PostgreSQL.
+
+### Running Tests
+
+**Option 1: Use testcontainers (default)**
+```bash
+go test -v ./...
+```
+This will automatically spin up a PostgreSQL container, run tests, and clean up.
+
+**Option 2: Use existing PostgreSQL instance**
+```bash
+# Set environment variables
+export TEST_POSTGRES_HOST=localhost
+export TEST_POSTGRES_PORT=5432
+export TEST_POSTGRES_USER=postgres
+export TEST_POSTGRES_PASSWORD=mypassword
+export TEST_POSTGRES_DB=postgres
+
+# Run tests (much faster, ~60x)
+go test -v ./...
+```
+
+**Option 3: Use the helper script**
+```bash
+# Use testcontainers
+./test.sh
+
+# Try to use existing postgres container if running
+./test.sh --existing
+
+# Show help
+./test.sh --help
+```
+
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.

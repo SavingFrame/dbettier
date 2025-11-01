@@ -1,6 +1,8 @@
 package dbtree
 
 import (
+	"log"
+
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	"github.com/SavingFrame/dbettier/internal/database"
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,6 +14,10 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.windowHeight = msg.Height
 		return m, nil
+	case showNotificationCmd:
+		log.Printf("Showing notification cmd: %v", msg)
+		// TODO: It doesn't work
+		return m, msg.cmd
 	case handleDBSelectionResult:
 		dbIdx := m.cursor.dbIndex()
 		m.databases[dbIdx].schemas = make([]*databaseSchemaNode, 0)
@@ -35,7 +41,40 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		s.expanded = true
 		m = m.adjustScrollToCursor()
+		log.Printf("Schema %s tables loaded", s.name)
+		return m, msg.cmd
+	case loadTablesColumnsResult:
+		var database *databaseNode
+		for _, db := range m.databases {
+			if db.id == msg.databaseID {
+				database = db
+				break
+			}
+		}
+		if database == nil {
+			return m, notifications.ShowError("Database not found for loading columns.")
+		}
+		var schema *databaseSchemaNode
+		for _, s := range database.schemas {
+			if s.name == msg.schemaName {
+				schema = s
+				break
+			}
+		}
+		if schema == nil {
+			return m, notifications.ShowError("Schema not found for loading columns.")
+		}
+		for _, tableNode := range schema.tables {
+			for _, col := range msg.columns[tableNode.name] {
+				tableNode.columns = append(tableNode.columns, &tableColumnNode{
+					name:      col.Name,
+					dataType:  col.DataType,
+					maxLength: col.MaxLength,
+				})
+			}
+		}
 		return m, msg.notification
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
@@ -207,32 +246,30 @@ func (m DBTreeModel) getLastVisibleDescendant(dbIdx int) []int {
 }
 
 func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
+	var cmd tea.Cmd
+	log.Printf("Handling enter at level %d", m.cursor.level())
 	switch m.cursor.level() {
 	case DatabaseLevel:
-		// Toggle expand/collapse or connect if not connected
 		dbIdx := m.cursor.dbIndex()
 		currentDB := m.databases[dbIdx]
 		dbConn := m.registry.GetAll()[dbIdx]
 
 		if !dbConn.Connected {
-			// Connect and fetch schemas
-			return m, handleDBSelection(dbIdx, m.registry)
+			cmd = handleDBSelection(dbIdx, m.registry)
 		} else {
-			// Toggle expand
 			currentDB.expanded = !currentDB.expanded
 		}
 
 	case SchemaLevel:
-		// Load tables for schema
 		dbIdx := m.cursor.dbIndex()
 		schemaIdx := m.cursor.schemaIndex()
-		return m, handleSchemaSelection(dbIdx, schemaIdx, m.registry)
+		cmd = handleSchemaSelection(dbIdx, schemaIdx, m.registry)
 
 	case TableLevel:
 		// TODO: Handle table selection (show columns, etc.)
 		// For now, do nothing
 	}
-	return m, nil
+	return m, cmd
 }
 
 func (m DBTreeModel) collapseNode() {
@@ -303,47 +340,88 @@ func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 		if !db.Connected {
 			err := db.Connect()
 			if err != nil {
-				// return m, nil, err
-				return handleDBSelectionResult{notification: notifications.ShowError(err.Error())}
+				return showNotificationCmd{cmd: notifications.ShowError(err.Error())}
 			}
 		}
 		schemas, err := db.ParseSchemas()
 		if err != nil {
-			return handleDBSelectionResult{notification: notifications.ShowError(err.Error())}
+			return showNotificationCmd{cmd: notifications.ShowError(err.Error())}
 		}
 		return handleDBSelectionResult{schemas: schemas, notification: notifications.ShowInfo("Successfully connected to database.")}
 	}
 }
 
 type handleSchemaSelectionResult struct {
-	notification tea.Cmd
-	tables       []*database.Table
+	tables []*database.Table
+	cmd    tea.Cmd
 }
 
 func handleSchemaSelection(dbIndex, schemaIndex int, registry *database.DBRegistry) tea.Cmd {
 	return func() tea.Msg {
+		log.Printf("Handling schema selection for dbIndex=%d, schemaIndex=%d", dbIndex, schemaIndex)
 		db := registry.GetAll()[dbIndex]
 		if !db.Connected {
 			err := db.Connect()
 			if err != nil {
-				// return m, nil, err
-				return handleSchemaSelectionResult{
-					notification: notifications.ShowError(err.Error()),
+				log.Printf("Error connecting to database: %v", err)
+				return showNotificationCmd{
+					cmd: notifications.ShowError(err.Error()),
 				}
 			}
 		}
 		schema := db.Schemas[schemaIndex]
+		log.Printf("Loading tables for schema: %s", schema.Name)
 		tables, err := schema.LoadTables()
 		if err != nil {
-			return handleSchemaSelectionResult{
-				notification: notifications.ShowError(err.Error()),
+			log.Printf("Error loading tables for schema %s: %v", schema.Name, err)
+			return showNotificationCmd{
+				cmd: notifications.ShowError(err.Error()),
 			}
 		}
 		return handleSchemaSelectionResult{
-			tables:       tables,
-			notification: notifications.ShowInfo("Successfully connected to database."),
+			tables: tables,
+			cmd:    tea.Batch(notifications.ShowInfo("Successfully connected to database."), loadTablesColumnsCmd(schema)),
 		}
 	}
+}
+
+type loadTablesColumnsResult struct {
+	columns      map[string][]*database.Column
+	schemaName   string
+	databaseID   string
+	notification tea.Cmd
+}
+
+func loadTablesColumnsCmd(schema *database.Schema) tea.Cmd {
+	return func() tea.Msg {
+		log.Printf("Loading columns for schema: %s", schema.Name)
+		tables, err := schema.LoadColumns()
+		if err != nil {
+			log.Printf("Error loading columns for schema %s: %v", schema.Name, err)
+			return showNotificationCmd{
+				cmd: notifications.ShowError(err.Error()),
+			}
+		}
+		log.Println("before creating table map")
+		tableMap := make(map[string][]*database.Column)
+		log.Println("table map created")
+		for t, cols := range tables {
+			tableMap[t.Name] = cols
+		}
+		log.Println("table map populated")
+		log.Printf("Loaded columns for schema %s: %+v", schema.Name, tableMap)
+		return loadTablesColumnsResult{
+			columns:    tableMap,
+			databaseID: schema.Database.ID,
+			schemaName: schema.Name,
+
+			notification: notifications.ShowSuccess("Tables and columns loaded successfully."),
+		}
+	}
+}
+
+type showNotificationCmd struct {
+	cmd tea.Cmd
 }
 
 func (m DBTreeModel) adjustScrollToCursor() DBTreeModel {

@@ -1,6 +1,8 @@
 package notifications
 
 import (
+	"log"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -73,6 +75,7 @@ func ShowSuccess(message string) tea.Cmd {
 
 func ShowError(message string) tea.Cmd {
 	return func() tea.Msg {
+		log.Printf("Error notification: %s", message)
 		return ShowNotificationMsg{
 			Message: message,
 			Level:   ErrorNotification,

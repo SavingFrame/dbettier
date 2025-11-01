@@ -1,9 +1,20 @@
 package dbtree
 
-import "github.com/SavingFrame/dbettier/internal/database"
+import (
+	"database/sql"
+
+	"github.com/SavingFrame/dbettier/internal/database"
+)
+
+type tableColumnNode struct {
+	name      string
+	dataType  string
+	maxLength sql.NullInt32
+}
 
 type schemaTableNode struct {
-	name string
+	name    string
+	columns []*tableColumnNode
 }
 
 type databaseSchemaNode struct {
@@ -17,6 +28,7 @@ type databaseNode struct {
 	host     string
 	schemas  []*databaseSchemaNode
 	expanded bool
+	id       string
 }
 
 // TreeLevel represents the depth in the tree hierarchy
@@ -51,8 +63,10 @@ func DBTreeScreen(registry *database.DBRegistry) DBTreeModel {
 			name:     db.Database,
 			host:     db.Host,
 			expanded: false,
+			id:       db.ID,
 		})
 	}
+
 	return DBTreeModel{
 		cursor: treeCursor{
 			path: []int{0}, // Start at first database
