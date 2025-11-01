@@ -110,6 +110,7 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// TODO: Need to refactor to reduce duplication
 func (m DBTreeModel) moveCursorUp() (DBTreeModel, tea.Cmd) {
 	switch m.cursor.level() {
 	case DatabaseLevel:
@@ -180,6 +181,7 @@ func (m DBTreeModel) moveCursorUp() (DBTreeModel, tea.Cmd) {
 	return m, nil
 }
 
+// TODO: Need to refactor to reduce duplication
 func (m DBTreeModel) moveCursorDown() (DBTreeModel, tea.Cmd) {
 	switch m.cursor.level() {
 	case DatabaseLevel:
@@ -335,14 +337,32 @@ func (m DBTreeModel) collapseNode() {
 		// Move cursor to parent database and collapse
 		dbIdx := m.cursor.dbIndex()
 		m.cursor.path = []int{dbIdx}
-		m.databases[dbIdx].expanded = false
+		if m.databases[dbIdx].schemas[m.cursor.schemaIndex()].expanded {
+			m.databases[dbIdx].schemas[m.cursor.schemaIndex()].expanded = false
+		} else {
+			m.databases[dbIdx].expanded = false
+		}
 
 	case TableLevel:
 		// Move cursor to parent schema and collapse
 		dbIdx := m.cursor.dbIndex()
 		schemaIdx := m.cursor.schemaIndex()
+		tableIdx := m.cursor.tableIndex()
 		m.cursor.path = []int{dbIdx, schemaIdx}
-		m.databases[dbIdx].schemas[schemaIdx].expanded = false
+
+		if m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded {
+			m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded = false
+		} else {
+			m.databases[dbIdx].schemas[schemaIdx].expanded = false
+		}
+	case TableColumnLevel:
+		// Move cursor to parent table
+		dbIdx := m.cursor.dbIndex()
+		schemaIdx := m.cursor.schemaIndex()
+		tableIdx := m.cursor.tableIndex()
+		m.cursor.path = []int{dbIdx, schemaIdx, tableIdx}
+		m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded = false
+
 	}
 }
 
@@ -375,8 +395,14 @@ func (m DBTreeModel) expandNode() (DBTreeModel, tea.Cmd) {
 		}
 
 	case TableLevel:
-		// TODO: Expand table to show columns, indexes, etc.
-		// For now, do nothing
+		dbIdx := m.cursor.dbIndex()
+		schemaIdx := m.cursor.schemaIndex()
+		tableIdx := m.cursor.tableIndex()
+		table := m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx]
+
+		if len(table.columns) > 0 {
+			table.expanded = true
+		}
 	}
 	return m, nil
 }

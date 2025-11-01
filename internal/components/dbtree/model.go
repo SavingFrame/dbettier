@@ -126,6 +126,7 @@ func (c treeCursor) isAtDatabaseLevel() bool {
 	return c.atLevel(DatabaseLevel)
 }
 
+// TODO: Refactor to avoid code duplication with rendering logic
 func (m DBTreeModel) getCursorVisualLine() int {
 	lineNum := 1
 
