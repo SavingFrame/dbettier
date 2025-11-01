@@ -36,7 +36,6 @@ func (m DBTreeModel) View() string {
 			mark = "✘"
 		}
 
-		// Determine expand/collapse indicator
 		expandIndicator := ""
 		if len(db.schemas) > 0 {
 			if db.expanded {
@@ -57,6 +56,7 @@ func (m DBTreeModel) View() string {
 		t.Child(dbText)
 
 		if db.expanded && len(db.schemas) > 0 {
+			// Render schemas
 			schemaTree := tree.New()
 			for schemaIdx, schema := range db.schemas {
 				expandIndicator := ""
@@ -77,6 +77,7 @@ func (m DBTreeModel) View() string {
 				}
 				schemaTree.Child(schemaText)
 				if schema.expanded && len(schema.tables) > 0 {
+					// Render tables
 					tableTree := tree.New()
 					for tableIdx, table := range schema.tables {
 						tableText := fmt.Sprintf(" %s", table.name)
@@ -87,6 +88,20 @@ func (m DBTreeModel) View() string {
 							tableText = itemStyle.Render(tableText)
 						}
 						tableTree.Child(tableText)
+						if table.expanded && len(table.columns) > 0 {
+							columnTree := tree.New()
+							for colIdx, column := range table.columns {
+								colText := fmt.Sprintf(" %s (%s)", column.name, column.dataType)
+								isFocused := m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.tableIndex() == tableIdx && m.cursor.tableColumnIndex() == colIdx
+								if isFocused {
+									colText = focusedStyle.Render(colText)
+								} else {
+									colText = itemStyle.Render(colText)
+								}
+								columnTree.Child(colText)
+							}
+							tableTree.Child(columnTree)
+						}
 					}
 					schemaTree.Child(tableTree)
 				}

@@ -13,8 +13,9 @@ type tableColumnNode struct {
 }
 
 type schemaTableNode struct {
-	name    string
-	columns []*tableColumnNode
+	name     string
+	columns  []*tableColumnNode
+	expanded bool
 }
 
 type databaseSchemaNode struct {
@@ -38,6 +39,7 @@ const (
 	DatabaseLevel TreeLevel = iota
 	SchemaLevel
 	TableLevel
+	TableColumnLevel
 )
 
 // treeCursor represents the current focus position in the tree using a path
@@ -112,6 +114,13 @@ func (c treeCursor) tableIndex() int {
 	return -1
 }
 
+func (c treeCursor) tableColumnIndex() int {
+	if len(c.path) > 3 {
+		return c.path[3]
+	}
+	return -1
+}
+
 // isAtDatabaseLevel returns true if cursor is on a database (not a schema)
 func (c treeCursor) isAtDatabaseLevel() bool {
 	return c.atLevel(DatabaseLevel)
@@ -137,11 +146,19 @@ func (m DBTreeModel) getCursorVisualLine() int {
 
 				// If schema is expanded, count tables
 				if schema.expanded && len(schema.tables) > 0 {
-					for tableIdx := range schema.tables {
+					for tableIdx, table := range schema.tables {
 						if m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.tableIndex() == tableIdx {
 							return lineNum
 						}
 						lineNum++
+
+						// If table is expanded, count columns
+						for columnIdx := range table.columns {
+							if m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.tableIndex() == tableIdx && m.cursor.tableColumnIndex() == columnIdx {
+								return lineNum
+							}
+							lineNum++
+						}
 					}
 				}
 			}

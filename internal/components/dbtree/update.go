@@ -148,10 +148,33 @@ func (m DBTreeModel) moveCursorUp() (DBTreeModel, tea.Cmd) {
 		tableIdx := m.cursor.tableIndex()
 		if tableIdx > 0 {
 			// Move to previous table
-			m.cursor.path[2]--
+			dbIdx := m.cursor.dbIndex()
+			schemaIdx := m.cursor.schemaIndex()
+			tableIdx--
+			m.cursor.path = []int{dbIdx, schemaIdx, tableIdx}
+
+			// Check if previous table has expanded columns
+			table := m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx]
+			if table.expanded && len(table.columns) > 0 {
+				// Move to last column of previous table
+				if len(m.cursor.path) < 4 {
+					m.cursor.path = append(m.cursor.path, len(table.columns)-1)
+				} else {
+					m.cursor.path[3] = len(table.columns) - 1
+				}
+			}
 		} else {
 			// Move to parent schema
 			m.cursor.path = []int{m.cursor.dbIndex(), m.cursor.schemaIndex()}
+		}
+	case TableColumnLevel:
+		columnIdx := m.cursor.tableColumnIndex()
+		if columnIdx > 0 {
+			// Move to previous column
+			m.cursor.path[3]--
+		} else {
+			// Move to parent table
+			m.cursor.path = []int{m.cursor.dbIndex(), m.cursor.schemaIndex(), m.cursor.tableIndex()}
 		}
 	}
 	return m, nil
@@ -205,8 +228,11 @@ func (m DBTreeModel) moveCursorDown() (DBTreeModel, tea.Cmd) {
 		schemaIdx := m.cursor.schemaIndex()
 		tableIdx := m.cursor.tableIndex()
 		currentSchema := m.databases[dbIdx].schemas[schemaIdx]
-
-		if tableIdx < len(currentSchema.tables)-1 {
+		currentTable := currentSchema.tables[tableIdx]
+		if currentTable.expanded && len(currentTable.columns) > 0 {
+			// Move to first column
+			m.cursor.path = []int{dbIdx, schemaIdx, tableIdx, 0}
+		} else if tableIdx < len(currentSchema.tables)-1 {
 			// Move to next table
 			m.cursor.path[2]++
 		} else if schemaIdx < len(m.databases[dbIdx].schemas)-1 {
@@ -221,6 +247,30 @@ func (m DBTreeModel) moveCursorDown() (DBTreeModel, tea.Cmd) {
 				m.cursor.path = []int{0}
 			}
 		}
+	case TableColumnLevel:
+		dbIdx := m.cursor.dbIndex()
+		schemaIdx := m.cursor.schemaIndex()
+		tableIdx := m.cursor.tableIndex()
+		columnIdx := m.cursor.tableColumnIndex()
+		currentTable := m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx]
+		if columnIdx < len(currentTable.columns)-1 {
+			// Move to next column
+			m.cursor.path[3]++
+		} else if tableIdx < len(m.databases[dbIdx].schemas[schemaIdx].tables)-1 {
+			// Move to next table
+			m.cursor.path = []int{dbIdx, schemaIdx, tableIdx + 1}
+		} else if schemaIdx < len(m.databases[dbIdx].schemas)-1 {
+			// Move to next schema
+			m.cursor.path = []int{dbIdx, schemaIdx + 1}
+		} else {
+			if dbIdx < len(m.databases)-1 {
+				m.cursor.path = []int{dbIdx + 1}
+			} else {
+				// Wrap to first database
+				m.cursor.path = []int{0}
+			}
+		}
+
 	}
 	return m, nil
 }
@@ -247,7 +297,6 @@ func (m DBTreeModel) getLastVisibleDescendant(dbIdx int) []int {
 
 func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
 	var cmd tea.Cmd
-	log.Printf("Handling enter at level %d", m.cursor.level())
 	switch m.cursor.level() {
 	case DatabaseLevel:
 		dbIdx := m.cursor.dbIndex()
@@ -266,8 +315,11 @@ func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
 		cmd = handleSchemaSelection(dbIdx, schemaIdx, m.registry)
 
 	case TableLevel:
-		// TODO: Handle table selection (show columns, etc.)
-		// For now, do nothing
+		dbIdx := m.cursor.dbIndex()
+		schemaIdx := m.cursor.schemaIndex()
+		tableIdx := m.cursor.tableIndex()
+		m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded = !m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded
+		return m, nil
 	}
 	return m, cmd
 }
@@ -394,7 +446,6 @@ type loadTablesColumnsResult struct {
 
 func loadTablesColumnsCmd(schema *database.Schema) tea.Cmd {
 	return func() tea.Msg {
-		log.Printf("Loading columns for schema: %s", schema.Name)
 		tables, err := schema.LoadColumns()
 		if err != nil {
 			log.Printf("Error loading columns for schema %s: %v", schema.Name, err)
@@ -402,14 +453,10 @@ func loadTablesColumnsCmd(schema *database.Schema) tea.Cmd {
 				cmd: notifications.ShowError(err.Error()),
 			}
 		}
-		log.Println("before creating table map")
 		tableMap := make(map[string][]*database.Column)
-		log.Println("table map created")
 		for t, cols := range tables {
 			tableMap[t.Name] = cols
 		}
-		log.Println("table map populated")
-		log.Printf("Loaded columns for schema %s: %+v", schema.Name, tableMap)
 		return loadTablesColumnsResult{
 			columns:    tableMap,
 			databaseID: schema.Database.ID,
