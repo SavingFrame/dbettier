@@ -10,18 +10,14 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEsc:
+		switch msg.String() {
+		case "esc":
 			if m.textarea.Focused() {
 				m.textarea.Blur()
 			}
-		case tea.KeyCtrlC:
+		case "ctrl+c":
 			return m, tea.Quit
-		default:
-			if !m.textarea.Focused() {
-				cmd = m.textarea.Focus()
-				cmds = append(cmds, cmd)
-			}
+			// Don't auto-focus - let root handle focus
 		}
 
 	case errMsg:
@@ -32,4 +28,14 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.textarea, cmd = m.textarea.Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
+}
+
+// Focus sets focus to the textarea
+func (m *SQLCommandBarModel) Focus() tea.Cmd {
+	return m.textarea.Focus()
+}
+
+// Blur removes focus from the textarea
+func (m *SQLCommandBarModel) Blur() {
+	m.textarea.Blur()
 }
