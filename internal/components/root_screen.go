@@ -21,6 +21,8 @@ const (
 	FocusSQLCommandBar
 )
 
+var paneOrder = []FocusedPane{FocusDBTree, FocusTableView, FocusSQLCommandBar}
+
 const (
 	DBTreeWidthRatio    = 0.20 // 35% of screen width for dbtree
 	SQLCommandBarHeight = 30   // lines
@@ -130,14 +132,29 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case "ctrl+l":
 				oldFocus := m.focusedPane
-				m.focusedPane = FocusSQLCommandBar
+				oldFocusIndex := 0
+				for i, pane := range paneOrder {
+					if pane == oldFocus {
+						oldFocusIndex = i
+						break
+					}
+				}
+				m.focusedPane = paneOrder[(oldFocusIndex+1)%len(paneOrder)]
 				if oldFocus != FocusSQLCommandBar {
 					return m, m.sqlCommandBar.Focus()
 				}
 				return m, nil
 			case "ctrl+k":
 				oldFocus := m.focusedPane
-				m.focusedPane = FocusTableView
+				oldFocusIndex := 0
+				for i, pane := range paneOrder {
+					if pane == oldFocus {
+						oldFocusIndex = i
+						break
+					}
+				}
+
+				m.focusedPane = paneOrder[(oldFocusIndex-1+len(paneOrder))%len(paneOrder)]
 				if oldFocus == FocusSQLCommandBar {
 					m.sqlCommandBar.Blur()
 				}
