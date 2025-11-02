@@ -55,6 +55,7 @@ type DBTreeModel struct {
 	databases    []*databaseNode
 	registry     *database.DBRegistry
 	windowHeight int
+	windowWidth  int
 	scrollOffset int
 }
 
@@ -76,8 +77,15 @@ func DBTreeScreen(registry *database.DBRegistry) DBTreeModel {
 		databases:    dbNodes,
 		registry:     registry,
 		windowHeight: 20,
+		windowWidth:  40,
 		scrollOffset: 0,
 	}
+}
+
+// SetSize updates the dimensions of the DBTree view
+func (m *DBTreeModel) SetSize(width, height int) {
+	m.windowWidth = width
+	m.windowHeight = height
 }
 
 // level returns the current tree level
