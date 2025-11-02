@@ -1,6 +1,11 @@
 package sqlcommandbar
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"log"
+
+	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 type errMsg error
 
@@ -9,6 +14,10 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+
+	case sharedcomponents.SetSQLTextMsg:
+		log.Println("Get `SETSQLTEXT` message in SQLCommandBarModel")
+		m.textarea.SetValue(msg.Command)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":

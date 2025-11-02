@@ -6,6 +6,7 @@ import (
 
 	"github.com/SavingFrame/dbettier/internal/components/dbtree"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
+	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	sqlcommandbar "github.com/SavingFrame/dbettier/internal/components/sql_commandbar"
 	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
@@ -161,6 +162,11 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
+	default:
+		routedCmds := m.routeToComponents(msg)
+		if len(routedCmds) > 0 {
+			return m, tea.Batch(routedCmds...)
+		}
 	}
 
 	// Route updates to appropriate component based on layout mode
@@ -188,6 +194,40 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.model, cmd = m.model.Update(msg)
 		return m, cmd
 	}
+}
+
+func (m *rootScreenModel) routeToComponents(msg tea.Msg) []tea.Cmd {
+	var cmds []tea.Cmd
+	var cmd tea.Cmd
+
+	msgType := sharedcomponents.GetMessageType(msg)
+	targets, shouldRoute := sharedcomponents.MessageRoutes[msgType]
+	log.Printf("Routing message of type %s to targets: %d (shouldRoute=%v)\n", msgType, targets, shouldRoute)
+
+	if !shouldRoute {
+		return cmds
+	}
+
+	if targets&sharedcomponents.TargetDBTree != 0 {
+		var treeModel tea.Model
+		treeModel, cmd = m.dbtree.Update(msg)
+		m.dbtree = treeModel.(dbtree.DBTreeModel)
+		cmds = append(cmds, cmd)
+	}
+
+	if targets&sharedcomponents.TargetTableView != 0 {
+		m.tableview, cmd = m.tableview.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	if targets&sharedcomponents.TargetSQLCommandBar != 0 {
+		var sqlModel tea.Model
+		sqlModel, cmd = m.sqlCommandBar.Update(msg)
+		m.sqlCommandBar = sqlModel.(sqlcommandbar.SQLCommandBarModel)
+		cmds = append(cmds, cmd)
+	}
+
+	return cmds
 }
 
 func (m rootScreenModel) View() string {

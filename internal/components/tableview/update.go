@@ -1,12 +1,19 @@
 package tableview
 
 import (
+	"log"
+
+	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 func (m TableViewModel) Update(msg tea.Msg) (TableViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+
+	case sharedcomponents.SetSQLTextMsg:
+		log.Println("Get `SETSQLTEXT` message in TableViewModel")
+		// m.textarea.SetValue(msg.Command)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
