@@ -22,8 +22,8 @@ const (
 )
 
 const (
-	DBTreeWidthRatio    = 0.3 // 1/5 of screen width
-	SQLCommandBarHeight = 30  // lines
+	DBTreeWidthRatio    = 0.20 // 35% of screen width for dbtree
+	SQLCommandBarHeight = 30   // lines
 )
 
 type rootScreenModel struct {
@@ -219,7 +219,7 @@ func (m rootScreenModel) renderSplitLayout() string {
 	rightColumn := lipgloss.JoinVertical(lipgloss.Left, tableView, sqlView)
 
 	// Compose full layout (tree on left, right column on right)
-	layout := lipgloss.JoinHorizontal(0.2, treeView, rightColumn)
+	layout := lipgloss.JoinHorizontal(lipgloss.Left, treeView, rightColumn)
 
 	return layout
 }
@@ -230,9 +230,14 @@ func (m rootScreenModel) renderDBTree() string {
 		borderColor = lipgloss.Color("205")
 	}
 
+	// Calculate fixed width for dbtree
+	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
+
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(borderColor)
+		BorderForeground(borderColor).
+		Width(leftWidth - 4). // Subtract 4 for border padding
+		Height(m.height - 4)  // Subtract 4 for border padding
 
 	content := m.dbtree.View()
 	return borderStyle.Render(content)
