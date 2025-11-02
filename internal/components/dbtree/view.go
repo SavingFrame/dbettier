@@ -127,7 +127,7 @@ func (m DBTreeModel) renderColumn(t *tree.Tree, dbIdx, schemaIdx, tableIdx, colI
 		m.cursor.tableIndex() == tableIdx &&
 		m.cursor.tableColumnIndex() == colIdx
 
-	m.renderNode(t, colText, isFocused, nil) // No children for columns
+	m.renderNode(t, colText, isFocused, nil)
 }
 
 func (m DBTreeModel) View() string {

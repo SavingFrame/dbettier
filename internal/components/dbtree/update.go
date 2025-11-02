@@ -19,51 +19,43 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// TODO: It doesn't work
 		return m, msg.cmd
 	case handleDBSelectionResult:
-		dbIdx := m.cursor.dbIndex()
-		m.databases[dbIdx].schemas = make([]*databaseSchemaNode, 0)
-		for _, schema := range msg.schemas {
-			m.databases[dbIdx].schemas = append(m.databases[dbIdx].schemas, &databaseSchemaNode{
-				name: schema.Name,
-			})
+		db := m.getCurrentDatabase()
+		if db != nil {
+			db.schemas = make([]*databaseSchemaNode, 0)
+			for _, schema := range msg.schemas {
+				db.schemas = append(db.schemas, &databaseSchemaNode{
+					name: schema.Name,
+				})
+			}
+			db.expanded = true
 		}
-		m.databases[dbIdx].expanded = true
 		m = m.adjustScrollToCursor()
 		return m, msg.notification
 	case handleSchemaSelectionResult:
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		s := m.databases[dbIdx].schemas[schemaIdx]
-		s.tables = make([]*schemaTableNode, 0)
-		for _, table := range msg.tables {
-			s.tables = append(s.tables, &schemaTableNode{
-				name: table.Name,
-			})
+		schema := m.getCurrentSchema()
+		if schema != nil {
+			schema.tables = make([]*schemaTableNode, 0)
+			for _, table := range msg.tables {
+				schema.tables = append(schema.tables, &schemaTableNode{
+					name: table.Name,
+				})
+			}
+			schema.expanded = true
+			log.Printf("Schema %s tables loaded", schema.name)
 		}
-		s.expanded = true
 		m = m.adjustScrollToCursor()
-		log.Printf("Schema %s tables loaded", s.name)
 		return m, msg.cmd
 	case loadTablesColumnsResult:
-		var database *databaseNode
-		for _, db := range m.databases {
-			if db.id == msg.databaseID {
-				database = db
-				break
-			}
-		}
+		database, _ := m.findDatabase(msg.databaseID)
 		if database == nil {
 			return m, notifications.ShowError("Database not found for loading columns.")
 		}
-		var schema *databaseSchemaNode
-		for _, s := range database.schemas {
-			if s.name == msg.schemaName {
-				schema = s
-				break
-			}
-		}
+
+		schema, _ := m.findSchema(database, msg.schemaName)
 		if schema == nil {
 			return m, notifications.ShowError("Schema not found for loading columns.")
 		}
+
 		for _, tableNode := range schema.tables {
 			for _, col := range msg.columns[tableNode.name] {
 				tableNode.columns = append(tableNode.columns, &tableColumnNode{
@@ -110,191 +102,81 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// TODO: Need to refactor to reduce duplication
 func (m DBTreeModel) moveCursorUp() (DBTreeModel, tea.Cmd) {
-	switch m.cursor.level() {
-	case DatabaseLevel:
-		// At database level
-		dbIdx := m.cursor.dbIndex()
-		if dbIdx > 0 {
-			// Move to previous database or its last visible descendant
-			dbIdx--
-			m.cursor.path = m.getLastVisibleDescendant(dbIdx)
-		} else {
-			// Wrap to last database and its last descendant
-			dbIdx = len(m.databases) - 1
-			m.cursor.path = m.getLastVisibleDescendant(dbIdx)
-		}
+	currentIdx := m.getCurrentIndex()
 
-	case SchemaLevel:
-		// At schema level
-		schemaIdx := m.cursor.schemaIndex()
-		if schemaIdx > 0 {
-			// Move to previous schema or its last visible descendant
-			dbIdx := m.cursor.dbIndex()
-			schemaIdx--
-			m.cursor.path = []int{dbIdx, schemaIdx}
-			// Check if previous schema has expanded tables
-			schema := m.databases[dbIdx].schemas[schemaIdx]
-			if schema.expanded && len(schema.tables) > 0 {
-				m.cursor.path = append(m.cursor.path, len(schema.tables)-1)
-			}
+	// Try to move to previous sibling
+	if currentIdx > 0 {
+		m.cursor.path[len(m.cursor.path)-1]--
+		// Navigate to the last visible descendant of the previous sibling
+		m.cursor.path = m.getLastVisibleDescendantAtPath(m.cursor.path)
+	} else {
+		// Move to parent level
+		if len(m.cursor.path) > 1 {
+			m.cursor.path = m.cursor.path[:len(m.cursor.path)-1]
 		} else {
-			// Move to parent database
-			m.cursor.path = []int{m.cursor.dbIndex()}
-		}
-
-	case TableLevel:
-		// At table level
-		tableIdx := m.cursor.tableIndex()
-		if tableIdx > 0 {
-			// Move to previous table
-			dbIdx := m.cursor.dbIndex()
-			schemaIdx := m.cursor.schemaIndex()
-			tableIdx--
-			m.cursor.path = []int{dbIdx, schemaIdx, tableIdx}
-
-			// Check if previous table has expanded columns
-			table := m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx]
-			if table.expanded && len(table.columns) > 0 {
-				// Move to last column of previous table
-				if len(m.cursor.path) < 4 {
-					m.cursor.path = append(m.cursor.path, len(table.columns)-1)
-				} else {
-					m.cursor.path[3] = len(table.columns) - 1
-				}
-			}
-		} else {
-			// Move to parent schema
-			m.cursor.path = []int{m.cursor.dbIndex(), m.cursor.schemaIndex()}
-		}
-	case TableColumnLevel:
-		columnIdx := m.cursor.tableColumnIndex()
-		if columnIdx > 0 {
-			// Move to previous column
-			m.cursor.path[3]--
-		} else {
-			// Move to parent table
-			m.cursor.path = []int{m.cursor.dbIndex(), m.cursor.schemaIndex(), m.cursor.tableIndex()}
+			// At top level, wrap to last item and its descendants
+			m.cursor.path = []int{len(m.databases) - 1}
+			m.cursor.path = m.getLastVisibleDescendantAtPath(m.cursor.path)
 		}
 	}
 	return m, nil
 }
 
-// TODO: Need to refactor to reduce duplication
 func (m DBTreeModel) moveCursorDown() (DBTreeModel, tea.Cmd) {
-	switch m.cursor.level() {
-	case DatabaseLevel:
-		// At database level
-		dbIdx := m.cursor.dbIndex()
-		currentDB := m.databases[dbIdx]
-
-		if currentDB.expanded && len(currentDB.schemas) > 0 {
-			// Move to first schema
-			m.cursor.path = []int{dbIdx, 0}
-		} else {
-			// Move to next database
-			if dbIdx < len(m.databases)-1 {
-				m.cursor.path = []int{dbIdx + 1}
-			} else {
-				// Wrap to first database
-				m.cursor.path = []int{0}
-			}
-		}
-
-	case SchemaLevel:
-		// At schema level
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		currentSchema := m.databases[dbIdx].schemas[schemaIdx]
-
-		if currentSchema.expanded && len(currentSchema.tables) > 0 {
-			// Move to first table
-			m.cursor.path = []int{dbIdx, schemaIdx, 0}
-		} else if schemaIdx < len(m.databases[dbIdx].schemas)-1 {
-			// Move to next schema
-			m.cursor.path = []int{dbIdx, schemaIdx + 1}
-		} else {
-			// Move to next database
-			if dbIdx < len(m.databases)-1 {
-				m.cursor.path = []int{dbIdx + 1}
-			} else {
-				// Wrap to first database
-				m.cursor.path = []int{0}
-			}
-		}
-
-	case TableLevel:
-		// At table level
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		tableIdx := m.cursor.tableIndex()
-		currentSchema := m.databases[dbIdx].schemas[schemaIdx]
-		currentTable := currentSchema.tables[tableIdx]
-		if currentTable.expanded && len(currentTable.columns) > 0 {
-			// Move to first column
-			m.cursor.path = []int{dbIdx, schemaIdx, tableIdx, 0}
-		} else if tableIdx < len(currentSchema.tables)-1 {
-			// Move to next table
-			m.cursor.path[2]++
-		} else if schemaIdx < len(m.databases[dbIdx].schemas)-1 {
-			// Move to next schema
-			m.cursor.path = []int{dbIdx, schemaIdx + 1}
-		} else {
-			// Move to next database
-			if dbIdx < len(m.databases)-1 {
-				m.cursor.path = []int{dbIdx + 1}
-			} else {
-				// Wrap to first database
-				m.cursor.path = []int{0}
-			}
-		}
-	case TableColumnLevel:
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		tableIdx := m.cursor.tableIndex()
-		columnIdx := m.cursor.tableColumnIndex()
-		currentTable := m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx]
-		if columnIdx < len(currentTable.columns)-1 {
-			// Move to next column
-			m.cursor.path[3]++
-		} else if tableIdx < len(m.databases[dbIdx].schemas[schemaIdx].tables)-1 {
-			// Move to next table
-			m.cursor.path = []int{dbIdx, schemaIdx, tableIdx + 1}
-		} else if schemaIdx < len(m.databases[dbIdx].schemas)-1 {
-			// Move to next schema
-			m.cursor.path = []int{dbIdx, schemaIdx + 1}
-		} else {
-			if dbIdx < len(m.databases)-1 {
-				m.cursor.path = []int{dbIdx + 1}
-			} else {
-				// Wrap to first database
-				m.cursor.path = []int{0}
-			}
-		}
-
+	// Try to move into children first
+	if m.isExpanded() && m.hasChildren() {
+		m.cursor.path = append(m.cursor.path, 0)
+		return m, nil
 	}
+
+	// Try to move to next sibling at current or any parent level
+	for level := len(m.cursor.path); level > 0; level-- {
+		// Get the index at this level
+		currentIdx := m.cursor.path[level-1]
+		siblingCount := m.getSiblingCountAtLevel(level - 1)
+
+		if currentIdx < siblingCount-1 {
+			// Move to next sibling at this level
+			m.cursor.path = m.cursor.path[:level]
+			m.cursor.path[level-1]++
+			return m, nil
+		}
+	}
+
+	// Wrap to first database if we're at the end
+	m.cursor.path = []int{0}
 	return m, nil
 }
 
-// getLastVisibleDescendant returns the path to the last visible descendant of a database
-func (m DBTreeModel) getLastVisibleDescendant(dbIdx int) []int {
-	db := m.databases[dbIdx]
-	if !db.expanded || len(db.schemas) == 0 {
-		return []int{dbIdx}
+// getSiblingCountAtLevel returns the number of siblings at a specific path level
+func (m DBTreeModel) getSiblingCountAtLevel(level int) int {
+	switch level {
+	case 0: // DatabaseLevel
+		return len(m.databases)
+	case 1: // SchemaLevel
+		if len(m.cursor.path) > 0 {
+			db := m.getDatabase(m.cursor.path[0])
+			if db != nil {
+				return len(db.schemas)
+			}
+		}
+	case 2: // TableLevel
+		if len(m.cursor.path) > 1 {
+			schema := m.getSchema(m.cursor.path[0], m.cursor.path[1])
+			if schema != nil {
+				return len(schema.tables)
+			}
+		}
+	case 3: // TableColumnLevel
+		if len(m.cursor.path) > 2 {
+			table := m.getTable(m.cursor.path[0], m.cursor.path[1], m.cursor.path[2])
+			if table != nil {
+				return len(table.columns)
+			}
+		}
 	}
-
-	// Find last schema
-	schemaIdx := len(db.schemas) - 1
-	schema := db.schemas[schemaIdx]
-
-	if !schema.expanded || len(schema.tables) == 0 {
-		return []int{dbIdx, schemaIdx}
-	}
-
-	// Find last table
-	tableIdx := len(schema.tables) - 1
-	return []int{dbIdx, schemaIdx, tableIdx}
+	return 0
 }
 
 func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
@@ -302,26 +184,23 @@ func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
 	switch m.cursor.level() {
 	case DatabaseLevel:
 		dbIdx := m.cursor.dbIndex()
-		currentDB := m.databases[dbIdx]
+		currentDB := m.getCurrentDatabase()
 		dbConn := m.registry.GetAll()[dbIdx]
 
 		if !dbConn.Connected {
 			cmd = handleDBSelection(dbIdx, m.registry)
-		} else {
+		} else if currentDB != nil {
 			currentDB.expanded = !currentDB.expanded
 		}
 
 	case SchemaLevel:
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		cmd = handleSchemaSelection(dbIdx, schemaIdx, m.registry)
+		cmd = handleSchemaSelection(m.cursor.dbIndex(), m.cursor.schemaIndex(), m.registry)
 
 	case TableLevel:
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		tableIdx := m.cursor.tableIndex()
-		m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded = !m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded
-		return m, nil
+		table := m.getCurrentTable()
+		if table != nil {
+			table.expanded = !table.expanded
+		}
 	}
 	return m, cmd
 }
@@ -329,40 +208,44 @@ func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
 func (m DBTreeModel) collapseNode() {
 	switch m.cursor.level() {
 	case DatabaseLevel:
-		// Collapse current database
-		dbIdx := m.cursor.dbIndex()
-		m.databases[dbIdx].expanded = false
+		db := m.getCurrentDatabase()
+		if db != nil {
+			db.expanded = false
+		}
 
 	case SchemaLevel:
-		// Move cursor to parent database and collapse
-		dbIdx := m.cursor.dbIndex()
-		m.cursor.path = []int{dbIdx}
-		if m.databases[dbIdx].schemas[m.cursor.schemaIndex()].expanded {
-			m.databases[dbIdx].schemas[m.cursor.schemaIndex()].expanded = false
+		schema := m.getCurrentSchema()
+		if schema != nil && schema.expanded {
+			schema.expanded = false
 		} else {
-			m.databases[dbIdx].expanded = false
+			// Schema not expanded, collapse parent database and move up
+			db := m.getCurrentDatabase()
+			if db != nil {
+				db.expanded = false
+			}
+			m.cursor.path = []int{m.cursor.dbIndex()}
 		}
 
 	case TableLevel:
-		// Move cursor to parent schema and collapse
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		tableIdx := m.cursor.tableIndex()
-		m.cursor.path = []int{dbIdx, schemaIdx}
-
-		if m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded {
-			m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded = false
+		table := m.getCurrentTable()
+		if table != nil && table.expanded {
+			table.expanded = false
 		} else {
-			m.databases[dbIdx].schemas[schemaIdx].expanded = false
+			// Table not expanded, collapse parent schema and move up
+			schema := m.getCurrentSchema()
+			if schema != nil {
+				schema.expanded = false
+			}
+			m.cursor.path = []int{m.cursor.dbIndex(), m.cursor.schemaIndex()}
 		}
-	case TableColumnLevel:
-		// Move cursor to parent table
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		tableIdx := m.cursor.tableIndex()
-		m.cursor.path = []int{dbIdx, schemaIdx, tableIdx}
-		m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx].expanded = false
 
+	case TableColumnLevel:
+		// Move to parent table and collapse it
+		table := m.getCurrentTable()
+		if table != nil {
+			table.expanded = false
+		}
+		m.cursor.path = []int{m.cursor.dbIndex(), m.cursor.schemaIndex(), m.cursor.tableIndex()}
 	}
 }
 
@@ -370,37 +253,32 @@ func (m DBTreeModel) expandNode() (DBTreeModel, tea.Cmd) {
 	switch m.cursor.level() {
 	case DatabaseLevel:
 		dbIdx := m.cursor.dbIndex()
-		currentDB := m.databases[dbIdx]
+		currentDB := m.getCurrentDatabase()
 		dbConn := m.registry.GetAll()[dbIdx]
 
 		if !dbConn.Connected {
 			// Connect and fetch schemas
 			return m, handleDBSelection(dbIdx, m.registry)
-		} else {
-			// Expand
+		} else if currentDB != nil {
 			currentDB.expanded = true
 		}
 
 	case SchemaLevel:
-		// Expand schema and load tables if not loaded
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		schema := m.databases[dbIdx].schemas[schemaIdx]
+		schema := m.getCurrentSchema()
+		if schema == nil {
+			return m, nil
+		}
 
 		if len(schema.tables) == 0 {
 			// Load tables
-			return m, handleSchemaSelection(dbIdx, schemaIdx, m.registry)
+			return m, handleSchemaSelection(m.cursor.dbIndex(), m.cursor.schemaIndex(), m.registry)
 		} else {
 			schema.expanded = true
 		}
 
 	case TableLevel:
-		dbIdx := m.cursor.dbIndex()
-		schemaIdx := m.cursor.schemaIndex()
-		tableIdx := m.cursor.tableIndex()
-		table := m.databases[dbIdx].schemas[schemaIdx].tables[tableIdx]
-
-		if len(table.columns) > 0 {
+		table := m.getCurrentTable()
+		if table != nil && len(table.columns) > 0 {
 			table.expanded = true
 		}
 	}
