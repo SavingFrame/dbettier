@@ -1,12 +1,66 @@
 package dbtree
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
+	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+type KeyMap struct {
+	Up         key.Binding
+	Down       key.Binding
+	Left       key.Binding
+	Right      key.Binding
+	Space      key.Binding
+	ScrollUp   key.Binding
+	ScrollDown key.Binding
+	Enter      key.Binding
+	Quite      key.Binding
+}
+
+var DefaultKeyMap = KeyMap{
+	Up: key.NewBinding(
+		key.WithKeys("k", "up"),
+		key.WithHelp("↑/k", "move up"),
+	),
+	Down: key.NewBinding(
+		key.WithKeys("j", "down"),
+		key.WithHelp("↓/j", "move down"),
+	),
+	Left: key.NewBinding(
+		key.WithKeys("h", "left"),
+		key.WithHelp("</h", "collapse node"),
+	),
+	Right: key.NewBinding(
+		key.WithKeys("l", "right"),
+		key.WithHelp(">/l", "expand node"),
+	),
+	Space: key.NewBinding(
+		key.WithKeys("space"),
+		key.WithHelp("space", "select/expand"),
+	),
+	ScrollDown: key.NewBinding(
+		key.WithKeys("ctrl+d"),
+		key.WithHelp("ctrl+d", "page down"),
+	),
+	ScrollUp: key.NewBinding(
+		key.WithKeys("ctrl+u"),
+		key.WithHelp("ctrl+u", "page up"),
+	),
+	Enter: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "open"),
+	),
+	Quite: key.NewBinding(
+		key.WithKeys("q", "ctrl+c", "esc"),
+		key.WithHelp("q/ctrl+c/esc", "quit"),
+	),
+}
 
 func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -68,35 +122,42 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, msg.notification
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "esc", "ctrl+c":
-			return m, tea.Quit
-		case "k", "up":
+		switch {
+		case key.Matches(msg, DefaultKeyMap.Up):
 			m, cmd = m.moveCursorUp()
 			m = m.adjustScrollToCursor()
-		case "j", "down":
+		case key.Matches(msg, DefaultKeyMap.Down):
 			m, cmd = m.moveCursorDown()
 			m = m.adjustScrollToCursor()
-		case "enter":
-			m, cmd = m.handleEnter()
-		case "left", "h":
+		case key.Matches(msg, DefaultKeyMap.Space):
+			m, cmd = m.handleSpace()
+		case key.Matches(msg, DefaultKeyMap.Enter):
+			log.Println("DBTreeModel: Enter key pressed")
+			if m.cursor.level() != TableLevel {
+				m, cmd = m.handleSpace()
+				return m, cmd
+			}
+			return m, handleOpenDatabase(m.getCurrentDatabase(), m.getCurrentSchema(), m.getCurrentTable())
+		case key.Matches(msg, DefaultKeyMap.Left):
 			m.collapseNode()
 			m = m.adjustScrollToCursor()
-		case "right", "l":
+		case key.Matches(msg, DefaultKeyMap.Right):
 			m, cmd = m.expandNode()
 			m = m.adjustScrollToCursor()
-		case "ctrl+d": // Page down
+		case key.Matches(msg, DefaultKeyMap.ScrollDown):
 			scrollAmount := m.windowHeight / 2
 			for range scrollAmount {
 				m, _ = m.moveCursorDown()
 			}
 			m = m.adjustScrollToCursor()
-		case "ctrl+u": // Page up
+		case key.Matches(msg, DefaultKeyMap.ScrollUp):
 			scrollAmount := m.windowHeight / 2
 			for range scrollAmount {
 				m, _ = m.moveCursorUp()
 			}
 			m = m.adjustScrollToCursor()
+		case key.Matches(msg, DefaultKeyMap.Quite):
+			return m, tea.Quit
 		}
 	}
 	return m, cmd
@@ -179,7 +240,7 @@ func (m DBTreeModel) getSiblingCountAtLevel(level int) int {
 	return 0
 }
 
-func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
+func (m DBTreeModel) handleSpace() (DBTreeModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch m.cursor.level() {
 	case DatabaseLevel:
@@ -305,6 +366,16 @@ func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 			return showNotificationCmd{cmd: notifications.ShowError(err.Error())}
 		}
 		return handleDBSelectionResult{schemas: schemas, notification: notifications.ShowInfo("Successfully connected to database.")}
+	}
+}
+
+func handleOpenDatabase(db *databaseNode, s *databaseSchemaNode, t *schemaTableNode) tea.Cmd {
+	return func() tea.Msg {
+		cmd := fmt.Sprintf("SELECT * FROM %s.%s LIMIT 500;", s.name, t.name)
+		return sharedcomponents.SetSQLTextMsg{
+			Command:    cmd,
+			DatabaseID: db.id,
+		}
 	}
 }
 
