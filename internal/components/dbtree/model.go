@@ -342,12 +342,14 @@ func (m DBTreeModel) getCursorVisualLine() int {
 						}
 						lineNum++
 
-						// If table is expanded, count columns
-						for columnIdx := range table.columns {
-							if m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.tableIndex() == tableIdx && m.cursor.tableColumnIndex() == columnIdx {
-								return lineNum
+						if table.expanded && len(table.columns) > 0 {
+							// If table is expanded, count columns
+							for columnIdx := range table.columns {
+								if m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.tableIndex() == tableIdx && m.cursor.tableColumnIndex() == columnIdx {
+									return lineNum
+								}
+								lineNum++
 							}
-							lineNum++
 						}
 					}
 				}

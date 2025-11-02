@@ -200,6 +200,7 @@ func (m DBTreeModel) handleEnter() (DBTreeModel, tea.Cmd) {
 		table := m.getCurrentTable()
 		if table != nil {
 			table.expanded = !table.expanded
+			m = m.adjustScrollToCursor()
 		}
 	}
 	return m, cmd
