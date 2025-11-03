@@ -5,7 +5,7 @@ import (
 	"log"
 
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
-	"github.com/charmbracelet/bubbles/table"
+	"github.com/SavingFrame/dbettier/pkgs/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -39,15 +39,29 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	var columns []table.Column
 	var rows []table.Row
 
-	colWidth := (m.width - 4) / len(msg.Columns) // -4 for borders and padding
+	// Use a reasonable fixed width for each column (allow scrolling for many columns)
+	const minColWidth = 15
+	const maxColWidth = 40
+
 	for _, colName := range msg.Columns {
+		// Calculate column width based on column name length, with min/max bounds
+		colWidth := len(colName) + 4 // Add padding
+		if colWidth < minColWidth {
+			colWidth = minColWidth
+		}
+		if colWidth > maxColWidth {
+			colWidth = maxColWidth
+		}
+
 		columns = append(columns, table.Column{
 			Title: colName,
 			Width: colWidth,
 		})
 	}
+
 	m.table.SetRows(nil)
 	m.table.SetColumns(columns)
+
 	for _, rowData := range msg.Rows {
 		var rowCells []string
 		for _, cell := range rowData {

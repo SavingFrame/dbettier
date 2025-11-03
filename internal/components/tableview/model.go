@@ -1,9 +1,8 @@
 package tableview
 
 import (
-	"github.com/charmbracelet/bubbles/table"
+	"github.com/SavingFrame/dbettier/pkgs/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type TableViewModel struct {
@@ -14,10 +13,10 @@ type TableViewModel struct {
 
 func TableViewScreen() TableViewModel {
 	columns := []table.Column{
-		{Title: "Rank", Width: 4},
-		{Title: "City", Width: 10},
-		{Title: "Country", Width: 10},
-		{Title: "Population", Width: 10},
+		{Title: "Rank", Width: 10},
+		{Title: "City", Width: 20},
+		{Title: "Country", Width: 20},
+		{Title: "Population", Width: 15},
 	}
 
 	rows := []table.Row{
@@ -127,20 +126,9 @@ func TableViewScreen() TableViewModel {
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(7),
+		table.WithHeight(20),
 	)
 
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-	t.SetStyles(s)
 	return TableViewModel{
 		width:  0,
 		height: 0,
@@ -156,36 +144,11 @@ func (m *TableViewModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height
 
-	// Update table height (leave some room for borders/padding)
-	if height > 2 {
-		m.table.SetHeight(height - 2)
-	}
+	// Update table width for horizontal scrolling
+	m.table.SetWidth(width)
 
-	// Dynamically resize columns to fill available width
-	if width > 10 {
-		m.resizeTable()
-	}
-}
-
-func (m *TableViewModel) resizeTable() {
-	cols := m.table.Columns()
-	if len(cols) > 0 {
-		// Distribute width evenly among all columns
-		colWidth := (m.width - 4) / len(cols) // -4 for borders and padding
-
-		// Ensure minimum width
-		if colWidth < 4 {
-			colWidth = 4
-		}
-
-		// Update all columns with new width
-		newCols := make([]table.Column, len(cols))
-		for i, col := range cols {
-			newCols[i] = table.Column{
-				Title: col.Title,
-				Width: colWidth,
-			}
-		}
-		m.table.SetColumns(newCols)
+	// Update table height (leave some room for borders/padding and scroll indicators)
+	if height > 4 {
+		m.table.SetHeight(height - 4)
 	}
 }
