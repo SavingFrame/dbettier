@@ -41,7 +41,7 @@ var DefaultKeyMap = KeyMap{
 		key.WithHelp(">/l", "expand node"),
 	),
 	Space: key.NewBinding(
-		key.WithKeys("space"),
+		key.WithKeys("space", " "),
 		key.WithHelp("space", "select/expand"),
 	),
 	ScrollDown: key.NewBinding(

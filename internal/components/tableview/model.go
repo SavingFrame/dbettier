@@ -163,25 +163,29 @@ func (m *TableViewModel) SetSize(width, height int) {
 
 	// Dynamically resize columns to fill available width
 	if width > 10 {
-		cols := m.table.Columns()
-		if len(cols) > 0 {
-			// Distribute width evenly among all columns
-			colWidth := (width - 4) / len(cols) // -4 for borders and padding
+		m.resizeTable()
+	}
+}
 
-			// Ensure minimum width
-			if colWidth < 4 {
-				colWidth = 4
-			}
+func (m *TableViewModel) resizeTable() {
+	cols := m.table.Columns()
+	if len(cols) > 0 {
+		// Distribute width evenly among all columns
+		colWidth := (m.width - 4) / len(cols) // -4 for borders and padding
 
-			// Update all columns with new width
-			newCols := make([]table.Column, len(cols))
-			for i, col := range cols {
-				newCols[i] = table.Column{
-					Title: col.Title,
-					Width: colWidth,
-				}
-			}
-			m.table.SetColumns(newCols)
+		// Ensure minimum width
+		if colWidth < 4 {
+			colWidth = 4
 		}
+
+		// Update all columns with new width
+		newCols := make([]table.Column, len(cols))
+		for i, col := range cols {
+			newCols[i] = table.Column{
+				Title: col.Title,
+				Width: colWidth,
+			}
+		}
+		m.table.SetColumns(newCols)
 	}
 }

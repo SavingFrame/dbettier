@@ -11,6 +11,11 @@ type SetSQLTextMsg struct {
 	DatabaseID string
 }
 
+type SQLResultMsg struct {
+	Columns []string
+	Rows    [][]any
+}
+
 type ComponentTarget int
 
 const (
@@ -21,6 +26,7 @@ const (
 
 var MessageRoutes = map[string]ComponentTarget{
 	"sharedcomponents.SetSQLTextMsg": TargetSQLCommandBar | TargetTableView,
+	"sharedcomponents.SQLResultMsg":  TargetTableView,
 }
 
 func GetMessageType(msg tea.Msg) string {

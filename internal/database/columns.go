@@ -53,7 +53,7 @@ FROM information_schema.columns
 WHERE table_schema = $1
  AND table_name = $2
 	ORDER BY ordinal_position`
-	rows, err := db.connection.Query(context.Background(), q, t.Schema.Name, t.Name)
+	rows, err := db.Connection.Query(context.Background(), q, t.Schema.Name, t.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (s *Schema) LoadColumns() (map[*Table][]*Column, error) {
   FROM information_schema.columns
  WHERE table_schema = $1
 	ORDER BY table_name, ordinal_position`
-	rows, err := db.connection.Query(context.Background(), q, s.Name)
+	rows, err := db.Connection.Query(context.Background(), q, s.Name)
 	if err != nil {
 		log.Printf("Error querying columns for schema %s: %v", s.Name, err)
 		return nil, err

@@ -15,7 +15,7 @@ type Database struct {
 	Port       int       `json:"port"`
 	Database   string    `json:"database"`
 	Connected  bool      `json:"-"`
-	connection *pgx.Conn `json:"-"`
+	Connection *pgx.Conn `json:"-"`
 	Schemas    []*Schema `json:"-"`
 	ID         string    `json:"id"`
 }

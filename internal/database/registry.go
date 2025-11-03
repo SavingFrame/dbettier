@@ -33,6 +33,18 @@ func (r *DBRegistry) GetAll() []*Database {
 	return r.databases
 }
 
+// GetByID returns a database connection by its ID
+func (r *DBRegistry) GetByID(id string) *Database {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, r := range r.databases {
+		if r.ID == id {
+			return r
+		}
+	}
+	return nil
+}
+
 // Find finds a database connection by host, database name, username and port
 func (r *DBRegistry) Find(host, database, username string, port int) *Database {
 	r.mu.RLock()

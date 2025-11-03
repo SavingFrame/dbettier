@@ -42,7 +42,7 @@ func (s *Schema) LoadTables() ([]*Table, error) {
 	}
 	q := "select table_name, table_type from information_schema.tables where table_schema = $1 ORDER BY table_type, table_name"
 
-	rows, err := db.connection.Query(context.Background(), q, s.Name)
+	rows, err := db.Connection.Query(context.Background(), q, s.Name)
 	if err != nil {
 		return nil, err
 	}

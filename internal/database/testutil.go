@@ -124,12 +124,12 @@ func CreateSchema(t *testing.T, db *Database, schemaName string) {
 	t.Helper()
 	ctx := context.Background()
 
-	_, err := db.connection.Exec(ctx, "DROP SCHEMA IF EXISTS "+schemaName+" CASCADE;")
+	_, err := db.Connection.Exec(ctx, "DROP SCHEMA IF EXISTS "+schemaName+" CASCADE;")
 	if err != nil {
 		t.Fatalf("Failed to drop existing schema %s: %v", schemaName, err)
 	}
 
-	_, err = db.connection.Exec(ctx, "CREATE SCHEMA "+schemaName+";")
+	_, err = db.Connection.Exec(ctx, "CREATE SCHEMA "+schemaName+";")
 	if err != nil {
 		t.Fatalf("Failed to create schema %s: %v", schemaName, err)
 	}
@@ -142,7 +142,7 @@ func DropSchemas(t *testing.T, db *Database, schemaNames ...string) {
 	ctx := context.Background()
 
 	for _, schemaName := range schemaNames {
-		_, err := db.connection.Exec(ctx, "DROP SCHEMA IF EXISTS "+schemaName+" CASCADE;")
+		_, err := db.Connection.Exec(ctx, "DROP SCHEMA IF EXISTS "+schemaName+" CASCADE;")
 		if err != nil {
 			t.Logf("Warning: Failed to drop schema %s: %v", schemaName, err)
 		}
@@ -156,7 +156,7 @@ func ExecQueries(t *testing.T, db *Database, queries ...string) {
 	ctx := context.Background()
 
 	for i, query := range queries {
-		_, err := db.connection.Exec(ctx, query)
+		_, err := db.Connection.Exec(ctx, query)
 		if err != nil {
 			t.Fatalf("Failed to execute query #%d: %v\nQuery: %s", i+1, err, query)
 		}

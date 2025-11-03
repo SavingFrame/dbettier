@@ -13,7 +13,7 @@ func (db *Database) Connect() error {
 	if err != nil {
 		return err
 	}
-	db.connection = conn
+	db.Connection = conn
 	db.Connected = true
 	return nil
 }
@@ -21,7 +21,7 @@ func (db *Database) Connect() error {
 func (db *Database) Disconnect() error {
 	if db.Connected {
 		db.Connected = false
-		return db.connection.Close(context.Background())
+		return db.Connection.Close(context.Background())
 	}
 	return nil
 }
@@ -42,7 +42,7 @@ func (db *Database) SaveAndConnect(registry *DBRegistry, configPath string) erro
 	} else {
 		existing.Password = db.Password
 		existing.Connected = db.Connected
-		existing.connection = db.connection
+		existing.Connection = db.Connection
 	}
 
 	return registry.SaveToFile(configPath)
@@ -55,7 +55,7 @@ func (db *Database) Test() (bool, string) {
 	}
 	defer db.Disconnect()
 	version := ""
-	err = db.connection.QueryRow(context.Background(), "SELECT version()").Scan(&version)
+	err = db.Connection.QueryRow(context.Background(), "SELECT version()").Scan(&version)
 	if err != nil {
 		version = "Get version failed: " + err.Error()
 		return false, version

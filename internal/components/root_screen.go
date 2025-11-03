@@ -121,7 +121,6 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		// Handle focus switching with ctrl+h and ctrl+l
-		log.Println("Key pressed:", msg.String())
 		if m.useSplitLayout {
 			switch msg.String() {
 			case "ctrl+h":
@@ -179,7 +178,9 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.dbtree = treeModel.(dbtree.DBTreeModel)
 			cmds = append(cmds, cmd)
 		case FocusTableView:
-			m.tableview, cmd = m.tableview.Update(msg)
+			var tableModel tea.Model
+			tableModel, cmd = m.tableview.Update(msg)
+			m.tableview = tableModel.(tableview.TableViewModel)
 			cmds = append(cmds, cmd)
 		case FocusSQLCommandBar:
 			var sqlModel tea.Model
@@ -216,7 +217,9 @@ func (m *rootScreenModel) routeToComponents(msg tea.Msg) []tea.Cmd {
 	}
 
 	if targets&sharedcomponents.TargetTableView != 0 {
-		m.tableview, cmd = m.tableview.Update(msg)
+		var tableView tea.Model
+		tableView, cmd = m.tableview.Update(msg)
+		m.tableview = tableView.(tableview.TableViewModel)
 		cmds = append(cmds, cmd)
 	}
 

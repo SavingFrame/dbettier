@@ -29,7 +29,7 @@ func (db *Database) ParseSchemas() ([]*Schema, error) {
 		}
 	}
 
-	rows, err := db.connection.Query(context.Background(), "SELECT nspname from pg_namespace")
+	rows, err := db.Connection.Query(context.Background(), "SELECT nspname from pg_namespace")
 	if err != nil {
 		return nil, err
 	}
