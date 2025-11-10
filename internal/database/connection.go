@@ -8,6 +8,9 @@ import (
 )
 
 func (db *Database) Connect() error {
+	if db.Connected {
+		return nil
+	}
 	uri := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", db.Username, db.Password, db.Host, db.Port, db.Database)
 	conn, err := pgx.Connect(context.Background(), uri)
 	if err != nil {
