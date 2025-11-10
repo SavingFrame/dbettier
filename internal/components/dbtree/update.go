@@ -139,7 +139,7 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, handleOpenDatabase(m.getCurrentDatabase(), m.getCurrentSchema(), m.getCurrentTable())
 		case key.Matches(msg, DefaultKeyMap.Left):
-			m.collapseNode()
+			m = m.collapseNode()
 			m = m.adjustScrollToCursor()
 		case key.Matches(msg, DefaultKeyMap.Right):
 			m, cmd = m.expandNode()
@@ -175,10 +175,6 @@ func (m DBTreeModel) moveCursorUp() (DBTreeModel, tea.Cmd) {
 		// Move to parent level
 		if len(m.cursor.path) > 1 {
 			m.cursor.path = m.cursor.path[:len(m.cursor.path)-1]
-		} else {
-			// At top level, wrap to last item and its descendants
-			m.cursor.path = []int{len(m.databases) - 1}
-			m.cursor.path = m.getLastVisibleDescendantAtPath(m.cursor.path)
 		}
 	}
 	return m, nil
@@ -205,8 +201,6 @@ func (m DBTreeModel) moveCursorDown() (DBTreeModel, tea.Cmd) {
 		}
 	}
 
-	// Wrap to first database if we're at the end
-	m.cursor.path = []int{0}
 	return m, nil
 }
 
@@ -266,7 +260,7 @@ func (m DBTreeModel) handleSpace() (DBTreeModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m DBTreeModel) collapseNode() {
+func (m DBTreeModel) collapseNode() DBTreeModel {
 	switch m.cursor.level() {
 	case DatabaseLevel:
 		db := m.getCurrentDatabase()
@@ -308,6 +302,7 @@ func (m DBTreeModel) collapseNode() {
 		}
 		m.cursor.path = []int{m.cursor.dbIndex(), m.cursor.schemaIndex(), m.cursor.tableIndex()}
 	}
+	return m
 }
 
 func (m DBTreeModel) expandNode() (DBTreeModel, tea.Cmd) {
@@ -315,9 +310,8 @@ func (m DBTreeModel) expandNode() (DBTreeModel, tea.Cmd) {
 	case DatabaseLevel:
 		dbIdx := m.cursor.dbIndex()
 		currentDB := m.getCurrentDatabase()
-		dbConn := m.registry.GetAll()[dbIdx]
 
-		if !dbConn.Connected {
+		if !currentDB.parsed {
 			// Connect and fetch schemas
 			return m, handleDBSelection(dbIdx, m.registry)
 		} else if currentDB != nil {
