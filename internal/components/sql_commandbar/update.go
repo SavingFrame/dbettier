@@ -54,20 +54,33 @@ func (m *SQLCommandBarModel) Blur() {
 }
 
 func executeSQLCommand(r *database.DBRegistry, command string, databaseID string) tea.Cmd {
+	log.Println("Executing SQL command on database ID:", databaseID)
 	return func() tea.Msg {
 		db := r.GetByID(databaseID)
 		if db == nil {
 			return notifications.ShowError("Database with ID " + databaseID + " not found")
 		}
 		conn := db.Connection
+		if conn == nil {
+			// TODO: TMP
+			db.Connect()
+			conn = db.Connection
+			// return notifications.ShowError("Database connection is nil")
+		}
 
+		log.Println("Fetching rows...")
 		rows, err := conn.Query(context.Background(), command)
+		log.Println("After query")
+		if err != nil {
+			return notifications.ShowError("Failed to execute query: " + err.Error())
+		}
+		defer rows.Close()
 		fieldDescriptions := rows.FieldDescriptions()
 		columnNames := make([]string, len(fieldDescriptions))
 		for i, fd := range fieldDescriptions {
 			columnNames[i] = string(fd.Name)
 		}
-		var results [][]interface{}
+		var results [][]any
 		for rows.Next() {
 			values, err := rows.Values()
 			if err != nil {
@@ -75,9 +88,10 @@ func executeSQLCommand(r *database.DBRegistry, command string, databaseID string
 			}
 			results = append(results, values)
 		}
+		log.Printf("SQL command executed, retrieved %d rows\n", len(results))
 
 		if rows.Err() != nil {
-			return notifications.ShowError("Row iteration error: " + err.Error())
+			return notifications.ShowError("Row iteration error: " + rows.Err().Error())
 		}
 		return sharedcomponents.SQLResultMsg{
 			Columns: columnNames,

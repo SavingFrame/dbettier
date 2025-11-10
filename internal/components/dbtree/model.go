@@ -30,6 +30,7 @@ type databaseNode struct {
 	schemas  []*databaseSchemaNode
 	expanded bool
 	id       string
+	parsed   bool
 }
 
 // TreeLevel represents the depth in the tree hierarchy

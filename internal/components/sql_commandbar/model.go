@@ -1,6 +1,7 @@
 package sqlcommandbar
 
 import (
+	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,6 +30,28 @@ func SQLCommandBarScreen(registry *database.DBRegistry) SQLCommandBarModel {
 
 func (m SQLCommandBarModel) Init() tea.Cmd {
 	return textarea.Blink
+}
+
+func (m SQLCommandBarModel) InitialSQLCommand() tea.Cmd {
+	return func() tea.Msg {
+		q := `
+SELECT 
+    schemaname AS "Schema",
+    relname AS "Table Name",
+    n_live_tup AS "Live Rows",
+    n_dead_tup AS "Dead Rows",
+    last_vacuum AS "Last Vacuum",
+    last_autovacuum AS "Last Auto Vacuum",
+    seq_scan AS "Sequential Scans",
+    idx_scan AS "Index Scans"
+FROM pg_stat_user_tables
+ORDER BY n_live_tup DESC;
+		`
+		return sharedcomponents.SetSQLTextMsg{
+			Command:    q,
+			DatabaseID: m.registry.GetAll()[0].ID,
+		}
+	}
 }
 
 // SetSize updates the dimensions of the SQL command bar

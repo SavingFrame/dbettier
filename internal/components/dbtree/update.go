@@ -70,7 +70,6 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case showNotificationCmd:
 		log.Printf("Showing notification cmd: %v", msg)
-		// TODO: It doesn't work
 		return m, msg.cmd
 	case handleDBSelectionResult:
 		db := m.getCurrentDatabase()
@@ -81,6 +80,7 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					name: schema.Name,
 				})
 			}
+			db.parsed = true
 			db.expanded = true
 		}
 		m = m.adjustScrollToCursor()
@@ -246,9 +246,8 @@ func (m DBTreeModel) handleSpace() (DBTreeModel, tea.Cmd) {
 	case DatabaseLevel:
 		dbIdx := m.cursor.dbIndex()
 		currentDB := m.getCurrentDatabase()
-		dbConn := m.registry.GetAll()[dbIdx]
 
-		if !dbConn.Connected {
+		if !currentDB.parsed {
 			cmd = handleDBSelection(dbIdx, m.registry)
 		} else if currentDB != nil {
 			currentDB.expanded = !currentDB.expanded
@@ -358,6 +357,7 @@ func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 		if !db.Connected {
 			err := db.Connect()
 			if err != nil {
+				log.Printf("Error connecting to database: %v", err)
 				return showNotificationCmd{cmd: notifications.ShowError(err.Error())}
 			}
 		}

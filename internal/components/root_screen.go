@@ -78,10 +78,21 @@ func RootScreen(registry *database.DBRegistry) rootScreenModel {
 }
 
 func (m rootScreenModel) Init() tea.Cmd {
+	log.Println("RootScreenModel Init() called")
+	var cmds []tea.Cmd
+	cmds = append(cmds, m.sqlCommandBar.InitialSQLCommand())
 	if m.model != nil {
-		return m.model.Init()
+		cmds = append(cmds, m.model.Init())
 	}
-	return nil
+	switch m.focusedPane {
+	case FocusDBTree:
+		cmds = append(cmds, m.dbtree.Init())
+	case FocusTableView:
+		cmds = append(cmds, m.tableview.Init())
+	case FocusSQLCommandBar:
+		cmds = append(cmds, m.sqlCommandBar.Init())
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

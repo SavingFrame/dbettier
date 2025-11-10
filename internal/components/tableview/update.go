@@ -26,6 +26,8 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
 			)
+		case "q", "esc", "ctrl+c":
+			return m, tea.Quit
 		}
 	case tea.WindowSizeMsg:
 		// Size will be handled by root screen
@@ -40,18 +42,30 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	var rows []table.Row
 
 	// Use a reasonable fixed width for each column (allow scrolling for many columns)
-	const minColWidth = 15
-	const maxColWidth = 40
+	const minColWidth = 3
+	const maxColWidth = 50
 
-	for _, colName := range msg.Columns {
+	var colSize []int
+	for range msg.Columns {
+		colSize = append(colSize, minColWidth)
+	}
+
+	for _, rowData := range msg.Rows {
+		var rowCells []string
+		for cellI, cell := range rowData {
+			v := fmt.Sprintf("%v", cell)
+			rowCells = append(rowCells, v)
+			colSize[cellI] = max(len(v), colSize[cellI])
+		}
+		rows = append(rows, table.Row(rowCells))
+	}
+
+	for colI, colName := range msg.Columns {
 		// Calculate column width based on column name length, with min/max bounds
-		colWidth := len(colName) + 4 // Add padding
-		if colWidth < minColWidth {
-			colWidth = minColWidth
-		}
-		if colWidth > maxColWidth {
-			colWidth = maxColWidth
-		}
+		// colWidth := max(min(colSize[colI], maxColWidth), minColWidth) + 2
+		colWidth := max(colSize[colI], len(colName)) + 2
+		colWidth = min(colWidth, maxColWidth)
+		colWidth = max(colWidth, minColWidth)
 
 		columns = append(columns, table.Column{
 			Title: colName,
@@ -62,12 +76,5 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	m.table.SetRows(nil)
 	m.table.SetColumns(columns)
 
-	for _, rowData := range msg.Rows {
-		var rowCells []string
-		for _, cell := range rowData {
-			rowCells = append(rowCells, fmt.Sprintf("%v", cell))
-		}
-		rows = append(rows, table.Row(rowCells))
-	}
 	m.table.SetRows(rows)
 }
