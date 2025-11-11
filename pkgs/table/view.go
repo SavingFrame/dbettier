@@ -43,6 +43,12 @@ func (m Model) renderHeader() string {
 		col := m.cols[colIdx]
 		header := col.Title
 
+		// Add sort indicator if this column is sorted
+		sortIndicator := m.getSortIndicator(colIdx)
+		if sortIndicator != "" {
+			header = header + " " + sortIndicator
+		}
+
 		// Truncate or pad header to fit column width
 		header = truncateOrPad(header, col.Width)
 
@@ -58,6 +64,31 @@ func (m Model) renderHeader() string {
 	}
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, headers...)
+}
+
+// getSortIndicator returns the sort indicator for a column.
+// Returns "↑" for ascending, "↓" for descending, with number prefix for multi-column sorts.
+func (m Model) getSortIndicator(colIdx int) string {
+	for i, sort := range m.orderColumns {
+		if sort.ColumnIndex == colIdx {
+			arrow := "↑"
+			if sort.Direction == SortDesc {
+				arrow = "↓"
+			}
+
+			// For multi-column sorts, show the order number
+			if len(m.orderColumns) > 1 {
+				// Use subscript numbers
+				subscripts := []string{"₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"}
+				if i < len(subscripts) {
+					return subscripts[i] + arrow
+				}
+				return fmt.Sprintf("%d%s", i+1, arrow)
+			}
+			return arrow
+		}
+	}
+	return ""
 }
 
 // renderRows renders the table rows (with scrolling).

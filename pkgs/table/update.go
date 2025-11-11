@@ -51,6 +51,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		// Yank (copy) cell value - vim key
 		case "y":
 			return m, m.yankCell()
+
+		// Sort by focused column - 's' key
+		case "s":
+			return m.toggleSort()
+
+		// Clear all sorts - Shift+S
+		case "S":
+			return m.clearSort()
 		}
 	}
 
@@ -237,4 +245,60 @@ func (m Model) yankCell() tea.Cmd {
 type YankMsg struct {
 	Success bool
 	Value   string
+}
+
+// SortChangeMsg is sent when the sort order changes.
+type SortChangeMsg struct {
+	SortOrders []OrderCol
+}
+
+// toggleSort toggles sort for the focused column.
+// If column is not sorted: add ASC
+// If column is ASC: change to DESC
+// If column is DESC: remove from sort
+// 's' key adds the column to sort list (multi-column sort)
+func (m Model) toggleSort() (Model, tea.Cmd) {
+	if len(m.cols) == 0 || m.focusedCol < 0 || m.focusedCol >= len(m.cols) {
+		return m, nil
+	}
+
+	// Find if this column is already in sort orders
+	existingIdx := -1
+	for i, sort := range m.orderColumns {
+		if sort.ColumnIndex == m.focusedCol {
+			existingIdx = i
+			break
+		}
+	}
+
+	if existingIdx == -1 {
+		// Column not sorted, add as ASC
+		m.orderColumns = append(m.orderColumns, OrderCol{
+			ColumnIndex: m.focusedCol,
+			Direction:   SortAsc,
+		})
+	} else if m.orderColumns[existingIdx].Direction == SortAsc {
+		// Column is ASC, change to DESC
+		m.orderColumns[existingIdx].Direction = SortDesc
+	} else {
+		// Column is DESC, remove from sort
+		m.orderColumns = append(m.orderColumns[:existingIdx], m.orderColumns[existingIdx+1:]...)
+	}
+
+	return m, func() tea.Msg {
+		return SortChangeMsg{SortOrders: m.orderColumns}
+	}
+}
+
+// clearSort clears all sorting.
+func (m Model) clearSort() (Model, tea.Cmd) {
+	if len(m.orderColumns) == 0 {
+		return m, nil
+	}
+
+	m.orderColumns = nil
+
+	return m, func() tea.Msg {
+		return SortChangeMsg{SortOrders: nil}
+	}
 }

@@ -7,6 +7,28 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// SortDirection represents the direction of sorting.
+type SortDirection int
+
+const (
+	SortAsc SortDirection = iota
+	SortDesc
+)
+
+// String returns the string representation of SortDirection.
+func (s SortDirection) String() string {
+	if s == SortAsc {
+		return "ASC"
+	}
+	return "DESC"
+}
+
+// OrderCol represents a column sort order.
+type OrderCol struct {
+	ColumnIndex int
+	Direction   SortDirection
+}
+
 // Model defines the state for the table widget with cell-level focus.
 type Model struct {
 	cols []Column
@@ -27,6 +49,9 @@ type Model struct {
 	// State
 	focused bool
 	styles  Styles
+
+	// Sorting
+	orderColumns []OrderCol
 }
 
 // Row represents one line in the table.
@@ -215,6 +240,11 @@ func (m Model) SelectedCell() string {
 // FocusedPosition returns the current focused row and column indices.
 func (m Model) FocusedPosition() (row, col int) {
 	return m.focusedRow, m.focusedCol
+}
+
+// OrderColumns returns the current sort orders.
+func (m Model) OrderColumns() []OrderCol {
+	return m.orderColumns
 }
 
 // Init initializes the table.
