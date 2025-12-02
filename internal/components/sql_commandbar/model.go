@@ -8,11 +8,13 @@ import (
 )
 
 type SQLCommandBarModel struct {
-	registry *database.DBRegistry
-	textarea textarea.Model
-	width    int
-	height   int
-	err      error
+	registry   *database.DBRegistry
+	textarea   textarea.Model
+	width      int
+	height     int
+	err        error
+	query      sharedcomponents.SQLQuery
+	databaseID string
 }
 
 func SQLCommandBarScreen(registry *database.DBRegistry) SQLCommandBarModel {
@@ -45,10 +47,17 @@ SELECT
     seq_scan AS "Sequential Scans",
     idx_scan AS "Index Scans"
 FROM pg_stat_user_tables
-ORDER BY n_live_tup DESC;
 		`
 		return sharedcomponents.SetSQLTextMsg{
-			Command:    q,
+			Query: sharedcomponents.SQLQuery{
+				BaseQuery: q,
+				SortOrders: []sharedcomponents.OrderByClause{
+					{
+						ColumnName: "n_live_tup",
+						Direction:  "DESC",
+					},
+				},
+			},
 			DatabaseID: m.registry.GetAll()[0].ID,
 		}
 	}

@@ -19,9 +19,10 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case sharedcomponents.SetSQLTextMsg:
-		log.Println("Get `SETSQLTEXT` message in SQLCommandBarModel")
-		m.textarea.SetValue(msg.Command)
-		return m, executeSQLCommand(m.registry, msg.Command, msg.DatabaseID)
+		m.textarea.SetValue(msg.Query.Compile())
+		m.databaseID = msg.DatabaseID
+		return m, executeSQLCommand(m.registry, msg.Query, msg.DatabaseID)
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
@@ -53,7 +54,7 @@ func (m *SQLCommandBarModel) Blur() {
 	m.textarea.Blur()
 }
 
-func executeSQLCommand(r *database.DBRegistry, command string, databaseID string) tea.Cmd {
+func executeSQLCommand(r *database.DBRegistry, q sharedcomponents.SQLQuery, databaseID string) tea.Cmd {
 	log.Println("Executing SQL command on database ID:", databaseID)
 	return func() tea.Msg {
 		db := r.GetByID(databaseID)
@@ -69,9 +70,10 @@ func executeSQLCommand(r *database.DBRegistry, command string, databaseID string
 		}
 
 		log.Println("Fetching rows...")
-		rows, err := conn.Query(context.Background(), command)
+		rows, err := conn.Query(context.Background(), q.Compile())
 		log.Println("After query")
 		if err != nil {
+			log.Printf("Failed to execute query %s", err.Error())
 			return notifications.ShowError("Failed to execute query: " + err.Error())
 		}
 		defer rows.Close()
@@ -94,8 +96,10 @@ func executeSQLCommand(r *database.DBRegistry, command string, databaseID string
 			return notifications.ShowError("Row iteration error: " + rows.Err().Error())
 		}
 		return sharedcomponents.SQLResultMsg{
-			Columns: columnNames,
-			Rows:    results,
+			Columns:    columnNames,
+			Rows:       results,
+			Query:      q,
+			DatabaseID: databaseID,
 		}
 	}
 }

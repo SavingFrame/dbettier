@@ -20,6 +20,10 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleSQLResultMsg(msg)
 		return m, nil
 
+	case table.SortChangeMsg:
+		// Table sort changed, emit OrderByChangeMsg for SQL layer
+		return m, m.handleSortChange(msg)
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
@@ -37,7 +41,41 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {
+	if m.query.BaseQuery == "" || m.databaseID == "" {
+		log.Println("Cannot sort: no base query or database ID")
+		return nil
+	}
+
+	// Convert table.SortOrder to sharedcomponents.OrderByClause
+	var orderByClauses []sharedcomponents.OrderByClause
+	columns := m.table.Columns()
+
+	for _, sort := range msg.SortOrders {
+		if sort.ColumnIndex < 0 || sort.ColumnIndex >= len(columns) {
+			continue
+		}
+
+		orderByClauses = append(orderByClauses, sharedcomponents.OrderByClause{
+			ColumnName: columns[sort.ColumnIndex].Title,
+			Direction:  sort.Direction.String(),
+		})
+	}
+	q := m.query
+	q.SortOrders = orderByClauses
+
+	return func() tea.Msg {
+		return sharedcomponents.SetSQLTextMsg{
+			DatabaseID: m.databaseID,
+			Query:      q,
+		}
+	}
+}
+
 func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
+	m.query = msg.Query
+	m.databaseID = msg.DatabaseID
+
 	var columns []table.Column
 	var rows []table.Row
 
@@ -63,7 +101,7 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	for colI, colName := range msg.Columns {
 		// Calculate column width based on column name length, with min/max bounds
 		// colWidth := max(min(colSize[colI], maxColWidth), minColWidth) + 2
-		colWidth := max(colSize[colI], len(colName)) + 2
+		colWidth := max(colSize[colI], len(colName)) + 4
 		colWidth = min(colWidth, maxColWidth)
 		colWidth = max(colWidth, minColWidth)
 

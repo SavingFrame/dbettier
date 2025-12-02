@@ -365,9 +365,12 @@ func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 
 func handleOpenDatabase(db *databaseNode, s *databaseSchemaNode, t *schemaTableNode) tea.Cmd {
 	return func() tea.Msg {
-		cmd := fmt.Sprintf("SELECT * FROM %s.%s LIMIT 500;", s.name, t.name)
+		baseQ := fmt.Sprintf("SELECT * FROM %s.%s;", s.name, t.name)
 		return sharedcomponents.SetSQLTextMsg{
-			Command:    cmd,
+			Query: sharedcomponents.SQLQuery{
+				BaseQuery: baseQ,
+				Limit:     500,
+			},
 			DatabaseID: db.id,
 		}
 	}
