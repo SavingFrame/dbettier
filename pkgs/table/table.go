@@ -258,3 +258,8 @@ func (m Model) OrderColumns() []OrderCol {
 func (m Model) Init() tea.Cmd {
 	return nil
 }
+
+// GetWidth returns the current width of the table.
+func (m Model) GetHeight() int {
+	return m.height
+}

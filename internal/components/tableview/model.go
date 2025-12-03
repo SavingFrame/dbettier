@@ -7,11 +7,13 @@ import (
 )
 
 type TableViewModel struct {
-	width      int
-	height     int
-	table      table.Model
-	query      sharedcomponents.SQLQuery
-	databaseID string // Current database ID
+	width            int
+	height           int
+	table            table.Model
+	query            sharedcomponents.SQLQuery
+	totalRows        int
+	totalRowsFetched bool
+	databaseID       string // Current database ID
 }
 
 func TableViewScreen() TableViewModel {

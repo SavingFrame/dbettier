@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
-	"charm.land/bubbles/v2/key"
-	tea "charm.land/bubbletea/v2"
 )
 
 type KeyMap struct {
@@ -369,7 +369,7 @@ func handleOpenDatabase(db *databaseNode, s *databaseSchemaNode, t *schemaTableN
 		return sharedcomponents.SetSQLTextMsg{
 			Query: sharedcomponents.SQLQuery{
 				BaseQuery: baseQ,
-				Limit:     500,
+				Limit:     501,
 			},
 			DatabaseID: db.id,
 		}

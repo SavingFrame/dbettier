@@ -87,8 +87,13 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	for range msg.Columns {
 		colSize = append(colSize, minColWidth)
 	}
-
-	for _, rowData := range msg.Rows {
+	var rawRows [][]any
+	if len(msg.Rows) > 500 {
+		rawRows = msg.Rows[:500]
+	} else {
+		rawRows = msg.Rows
+	}
+	for _, rowData := range rawRows {
 		var rowCells []string
 		for cellI, cell := range rowData {
 			v := fmt.Sprintf("%v", cell)
@@ -110,6 +115,10 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 			Width: colWidth,
 		})
 	}
+
+	totalRows := len(msg.Rows)
+	m.totalRows = totalRows
+	m.totalRowsFetched = totalRows <= 500
 
 	m.table.SetRows(nil)
 	m.table.SetColumns(columns)
