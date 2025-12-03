@@ -111,7 +111,7 @@ func (m DBTreeModel) renderSchema(t *tree.Tree, dbIdx, schemaIdx int, schema *da
 	}
 
 	schemaText := fmt.Sprintf("%s 󰑒 %s", expandIndicator, schema.name)
-	schemaText = m.truncateText(schemaText, m.windowWidth-8)
+	schemaText = m.truncateText(schemaText, m.windowWidth-12)
 	isFocused := m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.atLevel(SchemaLevel)
 
 	var childrenFn func(*tree.Tree)
@@ -129,7 +129,7 @@ func (m DBTreeModel) renderSchema(t *tree.Tree, dbIdx, schemaIdx int, schema *da
 // renderTable adds a table node and recursively its columns
 func (m DBTreeModel) renderTable(t *tree.Tree, dbIdx, schemaIdx, tableIdx int, table *schemaTableNode) {
 	tableText := fmt.Sprintf(" %s", table.name)
-	tableText = m.truncateText(tableText, m.windowWidth-12)
+	tableText = m.truncateText(tableText, m.windowWidth-14)
 	isFocused := m.cursor.dbIndex() == dbIdx &&
 		m.cursor.schemaIndex() == schemaIdx &&
 		m.cursor.tableIndex() == tableIdx &&
@@ -150,7 +150,7 @@ func (m DBTreeModel) renderTable(t *tree.Tree, dbIdx, schemaIdx, tableIdx int, t
 // renderColumn adds a column node (leaf node)
 func (m DBTreeModel) renderColumn(t *tree.Tree, dbIdx, schemaIdx, tableIdx, colIdx int, column *tableColumnNode) {
 	colText := fmt.Sprintf("󰠵 %s (%s)", column.name, column.dataType)
-	colText = m.truncateText(colText, m.windowWidth-16)
+	colText = m.truncateText(colText, m.windowWidth-18)
 	isFocused := m.cursor.dbIndex() == dbIdx &&
 		m.cursor.schemaIndex() == schemaIdx &&
 		m.cursor.tableIndex() == tableIdx &&
