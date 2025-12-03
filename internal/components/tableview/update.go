@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
+	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
-	tea "charm.land/bubbletea/v2"
 )
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -101,7 +101,7 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	for colI, colName := range msg.Columns {
 		// Calculate column width based on column name length, with min/max bounds
 		// colWidth := max(min(colSize[colI], maxColWidth), minColWidth) + 2
-		colWidth := max(colSize[colI], len(colName)) + 4
+		colWidth := max(colSize[colI], len(colName)) + 5
 		colWidth = min(colWidth, maxColWidth)
 		colWidth = max(colWidth, minColWidth)
 

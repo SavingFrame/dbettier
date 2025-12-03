@@ -25,8 +25,8 @@ const (
 var paneOrder = []FocusedPane{FocusDBTree, FocusTableView, FocusSQLCommandBar}
 
 const (
-	DBTreeWidthRatio    = 0.20 // 20% of screen width for dbtree
-	SQLCommandBarHeight = 30   // lines
+	DBTreeWidthRatio         = 0.20 // 20% of screen width for dbtree
+	SQLCommandBarHeightRatio = 30   // precent
 )
 
 type rootScreenModel struct {
@@ -92,13 +92,14 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Calculate dimensions for each component
 		leftWidth := int(float64(m.width) * DBTreeWidthRatio)
 		rightWidth := m.width - leftWidth
-		topHeight := m.height - SQLCommandBarHeight
+		SQLCommandBarHeight := int(float64(m.height) * (float64(SQLCommandBarHeightRatio) / 100.0))
+		tableViewHeight := m.height - SQLCommandBarHeight
 
 		// Update component sizes (accounting for borders: 2 per side = 4 for width, 2 for height)
 		// Each border style will add 2 to width and 2 to height, so we subtract those
-		m.dbtree.SetSize(leftWidth-4, m.height-4)
-		m.tableview.SetSize(rightWidth-4, topHeight-4)
-		m.sqlCommandBar.SetSize(rightWidth-4, SQLCommandBarHeight-4)
+		m.dbtree.SetSize(leftWidth-4, m.height-2)
+		m.tableview.SetSize(rightWidth-4, tableViewHeight-2)
+		m.sqlCommandBar.SetSize(rightWidth-4, SQLCommandBarHeight)
 		return m, nil
 
 	case tea.KeyMsg:

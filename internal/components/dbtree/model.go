@@ -77,8 +77,8 @@ func DBTreeScreen(registry *database.DBRegistry) DBTreeModel {
 		},
 		databases:    dbNodes,
 		registry:     registry,
-		windowHeight: 20,
-		windowWidth:  40,
+		windowHeight: 0,
+		windowWidth:  0,
 		scrollOffset: 0,
 	}
 }

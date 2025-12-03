@@ -1,10 +1,10 @@
 package sqlcommandbar
 
 import (
+	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
-	"charm.land/bubbles/v2/textarea"
 )
 
 type SQLCommandBarModel struct {
@@ -68,5 +68,5 @@ func (m *SQLCommandBarModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height
 	m.textarea.SetWidth(width - 2)
-	m.textarea.SetHeight(height - 4)
+	m.textarea.SetHeight(height - 1)
 }
