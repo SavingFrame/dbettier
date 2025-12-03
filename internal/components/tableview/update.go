@@ -6,7 +6,7 @@ import (
 
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

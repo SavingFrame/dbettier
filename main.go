@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/SavingFrame/dbettier/internal/components"
 	"github.com/SavingFrame/dbettier/internal/database"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 // setupDebugLog initializes debug logging if DEBUG env var is set.
@@ -33,7 +33,9 @@ func main() {
 		fmt.Println("Warning: could not load connections:", err)
 	}
 
-	if _, err := tea.NewProgram(components.RootScreen(registry), tea.WithAltScreen()).Run(); err != nil {
+	v := components.RootScreen(registry)
+
+	if _, err := tea.NewProgram(v).Run(); err != nil {
 		fmt.Println("Error while running program:", err)
 		os.Exit(1)
 	}

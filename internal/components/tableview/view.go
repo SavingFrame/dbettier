@@ -1,17 +1,21 @@
 package tableview
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 var placeholderStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("240")).
 	Italic(true)
 
-func (m TableViewModel) View() string {
+func (m TableViewModel) View() tea.View {
+	var v tea.View
+	v.AltScreen = true
 	if m.width == 0 || m.height == 0 {
-		return placeholderStyle.Render("Table view (empty)")
+		v.SetContent(placeholderStyle.Render("Table view (empty)"))
+		return v
 	}
-	// Border is applied in root_screen.go, just return the table view
-	return m.table.View()
+	v.SetContent(m.table.View())
+	return v
 }

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/tree"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/tree"
 )
 
 func (m DBTreeModel) Init() tea.Cmd {
@@ -159,7 +159,8 @@ func (m DBTreeModel) renderColumn(t *tree.Tree, dbIdx, schemaIdx, tableIdx, colI
 	m.renderNode(t, colText, isFocused, nil)
 }
 
-func (m DBTreeModel) View() string {
+func (m DBTreeModel) View() tea.View {
+	var v tea.View
 	t := tree.
 		Root("Databases:").
 		Enumerator(tree.RoundedEnumerator).
@@ -196,5 +197,8 @@ func (m DBTreeModel) View() string {
 		}
 	}
 
-	return strings.Join(resultLines, "\n")
+	content := strings.Join(resultLines, "\n")
+	v.AltScreen = true
+	v.SetContent(content)
+	return v
 }

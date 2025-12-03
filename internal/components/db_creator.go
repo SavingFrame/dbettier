@@ -5,14 +5,15 @@ import (
 	"strconv"
 	"strings"
 
+	"charm.land/bubbles/v2/cursor"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/SavingFrame/dbettier/internal/database"
-	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 var (
+	focusedColor        = lipgloss.Color("205")
 	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	successStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
@@ -46,16 +47,19 @@ func DBCreatorScreen(registry *database.DBRegistry) DBCreatorModel {
 	var t textinput.Model
 	for i := range m.inputs {
 		t = textinput.New()
-		t.Cursor.Style = cursorStyle
+		s := t.Styles()
+		s.Cursor.Color = focusedColor
+		s.Focused.Prompt = focusedStyle
+		s.Focused.Text = focusedStyle
+		s.Blurred.Prompt = noStyle
+		s.Blurred.Text = noStyle
 		t.CharLimit = 32
-		t.Width = 20
+		t.SetWidth(20)
 
 		switch i {
 		case 0:
 			t.Placeholder = "Host"
 			t.SetValue("localhost")
-			t.PromptStyle = focusedStyle
-			t.TextStyle = focusedStyle
 		case 1:
 			t.SetValue("5432")
 			t.Placeholder = "Port"
@@ -107,18 +111,6 @@ func (m DBCreatorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
 
-		// Change cursor mode
-		case "ctrl+r":
-			m.cursorMode++
-			if m.cursorMode > cursor.CursorHide {
-				m.cursorMode = cursor.CursorBlink
-			}
-			cmds := make([]tea.Cmd, len(m.inputs))
-			for i := range m.inputs {
-				cmds[i] = m.inputs[i].Cursor.SetMode(m.cursorMode)
-			}
-			return m, tea.Batch(cmds...)
-
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
 			s := msg.String()
@@ -162,14 +154,10 @@ func (m DBCreatorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if i == m.focusIndex {
 					// Set focused state
 					cmds[i] = m.inputs[i].Focus()
-					m.inputs[i].PromptStyle = focusedStyle
-					m.inputs[i].TextStyle = focusedStyle
 					continue
 				}
 				// Remove focused state
 				m.inputs[i].Blur()
-				m.inputs[i].PromptStyle = noStyle
-				m.inputs[i].TextStyle = noStyle
 			}
 
 			return m, tea.Batch(cmds...)
@@ -221,8 +209,9 @@ func createDatabase(host, username, password string, port int, db string, regist
 	}
 }
 
-func (m DBCreatorModel) View() string {
+func (m DBCreatorModel) View() tea.View {
 	var b strings.Builder
+	var v tea.View
 
 	for i := range m.inputs {
 		b.WriteString(m.inputs[i].View())
@@ -255,5 +244,7 @@ func (m DBCreatorModel) View() string {
 	b.WriteString(cursorModeHelpStyle.Render(m.cursorMode.String()))
 	b.WriteString(helpStyle.Render(" (ctrl+r to change style)"))
 
-	return b.String()
+	v.AltScreen = true
+	v.SetContent(b.String())
+	return v
 }
