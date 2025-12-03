@@ -24,7 +24,7 @@ func (m Model) View() string {
 	s.WriteString(m.renderRows())
 
 	// Render scroll indicators if needed
-	if m.focused {
+	if m.focused && m.scrollIndicator {
 		s.WriteString("\n")
 		s.WriteString(m.renderScrollIndicators())
 	}

@@ -47,8 +47,9 @@ type Model struct {
 	height int
 
 	// State
-	focused bool
-	styles  Styles
+	focused         bool
+	scrollIndicator bool
+	styles          Styles
 
 	// Sorting
 	orderColumns []OrderCol
@@ -157,6 +158,12 @@ func WithFocused(f bool) Option {
 func WithStyles(s Styles) Option {
 	return func(m *Model) {
 		m.styles = s
+	}
+}
+
+func WithScrollIndicator(s bool) Option {
+	return func(m *Model) {
+		m.scrollIndicator = s
 	}
 }
 
