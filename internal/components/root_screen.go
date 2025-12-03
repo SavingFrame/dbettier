@@ -25,7 +25,7 @@ const (
 var paneOrder = []FocusedPane{FocusDBTree, FocusTableView, FocusSQLCommandBar}
 
 const (
-	DBTreeWidthRatio    = 0.20 // 35% of screen width for dbtree
+	DBTreeWidthRatio    = 0.20 // 20% of screen width for dbtree
 	SQLCommandBarHeight = 30   // lines
 )
 
@@ -268,7 +268,7 @@ func (m rootScreenModel) renderDBTree() string {
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
 		Width(leftWidth - 4). // Subtract 4 for border padding
-		Height(m.height - 4)  // Subtract 4 for border padding
+		Height(m.height)
 
 	content := m.dbtree.RenderContent()
 	return borderStyle.Render(content)
@@ -280,10 +280,11 @@ func (m rootScreenModel) renderTableView() string {
 		borderColor = lipgloss.Color("205")
 	}
 
+	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
 	// Don't set explicit height - let the content determine it
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(borderColor)
+		BorderForeground(borderColor).Width(m.width - leftWidth)
 
 	content := m.tableview.RenderContent()
 	return borderStyle.Render(content)
@@ -295,9 +296,11 @@ func (m rootScreenModel) renderSQLCommandBar() string {
 		borderColor = lipgloss.Color("205")
 	}
 
+	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
+	_, tableViewY := m.tableview.GetSize()
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(borderColor)
+		BorderForeground(borderColor).Width(m.width - leftWidth).Height(m.height - tableViewY)
 
 	content := m.sqlCommandBar.RenderContent()
 	return borderStyle.Render(content)

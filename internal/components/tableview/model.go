@@ -1,9 +1,9 @@
 package tableview
 
 import (
+	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
-	tea "charm.land/bubbletea/v2"
 )
 
 type TableViewModel struct {
@@ -154,4 +154,8 @@ func (m *TableViewModel) SetSize(width, height int) {
 	if height > 4 {
 		m.table.SetHeight(height - 4)
 	}
+}
+
+func (m *TableViewModel) GetSize() (int, int) {
+	return m.width, m.height
 }
