@@ -214,7 +214,6 @@ func (m rootScreenModel) View() tea.View {
 
 	if m.notification == nil {
 		v.SetContent(baseView)
-
 		return v
 	}
 
@@ -223,16 +222,13 @@ func (m rootScreenModel) View() tea.View {
 	notifView := style.Render(m.notification.Message)
 
 	if m.width > 0 && m.height > 0 {
-		notifOverlay := lipgloss.Place(
-			m.width,
-			1,
-			lipgloss.Right,
-			lipgloss.Top,
-			notifView,
+		// Use Canvas and Layers for compositing notification overlay
+		notifWidth := lipgloss.Width(notifView)
+		canvas := lipgloss.NewCanvas(
+			lipgloss.NewLayer(baseView),
+			lipgloss.NewLayer(notifView).X(m.width-notifWidth).Y(0),
 		)
-
-		v.SetContent(notifOverlay + baseView)
-
+		v.SetContent(canvas.Render())
 		return v
 	}
 
@@ -241,10 +237,7 @@ func (m rootScreenModel) View() tea.View {
 }
 
 func (m rootScreenModel) renderSplitLayout() string {
-	// var v tea.View
-	// v.AltScreen = true
 	if m.width == 0 || m.height == 0 {
-		// v.SetContent("Resizing...")
 		return "Resizing..."
 	}
 
@@ -259,7 +252,6 @@ func (m rootScreenModel) renderSplitLayout() string {
 	// Compose full layout (tree on left, right column on right)
 	layout := lipgloss.JoinHorizontal(lipgloss.Left, treeView, rightColumn)
 
-	// v.SetContent(layout)
 	return layout
 }
 
@@ -278,9 +270,8 @@ func (m rootScreenModel) renderDBTree() string {
 		Width(leftWidth - 4). // Subtract 4 for border padding
 		Height(m.height - 4)  // Subtract 4 for border padding
 
-	content := m.dbtree.View()
-	// return borderStyle.Render(content)
-	return content
+	content := m.dbtree.RenderContent()
+	return borderStyle.Render(content)
 }
 
 func (m rootScreenModel) renderTableView() string {
@@ -294,7 +285,7 @@ func (m rootScreenModel) renderTableView() string {
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor)
 
-	content := m.tableview.View()
+	content := m.tableview.RenderContent()
 	return borderStyle.Render(content)
 }
 
@@ -308,12 +299,6 @@ func (m rootScreenModel) renderSQLCommandBar() string {
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor)
 
-	content := m.sqlCommandBar.View()
+	content := m.sqlCommandBar.RenderContent()
 	return borderStyle.Render(content)
-}
-
-// this is the switcher which will switch between screens
-func (m rootScreenModel) SwitchScreen(model tea.Model) (tea.Model, tea.Cmd) {
-	m.model = model
-	return m.model, m.model.Init() // must return .Init() to initialize the screen (and here the magic happens)
 }

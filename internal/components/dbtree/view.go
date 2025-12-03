@@ -159,8 +159,8 @@ func (m DBTreeModel) renderColumn(t *tree.Tree, dbIdx, schemaIdx, tableIdx, colI
 	m.renderNode(t, colText, isFocused, nil)
 }
 
-func (m DBTreeModel) View() tea.View {
-	var v tea.View
+// RenderContent returns the string representation of the view for composition
+func (m DBTreeModel) RenderContent() string {
 	t := tree.
 		Root("Databases:").
 		Enumerator(tree.RoundedEnumerator).
@@ -198,7 +198,13 @@ func (m DBTreeModel) View() tea.View {
 	}
 
 	content := strings.Join(resultLines, "\n")
+	return content
+}
+
+// View implements tea.Model interface
+func (m DBTreeModel) View() tea.View {
+	var v tea.View
 	v.AltScreen = true
-	v.SetContent(content)
+	v.SetContent(m.RenderContent())
 	return v
 }
