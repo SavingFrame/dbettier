@@ -96,6 +96,10 @@ func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, d
 		var results [][]any
 		for rows.Next() {
 			values, err := rows.Values()
+			// for _, v := range values {
+			// 	pgtype.Numeric.Exp
+			// 	log.Printf("Value: %+v type: %T\n", v, v)
+			// }
 			if err != nil {
 				return notifications.ShowError("Failed to read row: " + err.Error())
 			}

@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -71,6 +72,19 @@ func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {
 	return nil
 }
 
+func formatCellValue(cell any) string {
+	switch v := cell.(type) {
+	case pgtype.Numeric:
+		vTmp, err := v.Value()
+		if err != nil {
+			return fmt.Sprintf("ERR: %v", err)
+		}
+		return fmt.Sprintf("%v", vTmp)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	m.query = msg.Query
 	m.databaseID = msg.DatabaseID
@@ -96,9 +110,9 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	for _, rowData := range rawRows {
 		var rowCells []string
 		for cellI, cell := range rowData {
-			v := fmt.Sprintf("%v", cell)
-			rowCells = append(rowCells, v)
-			colSize[cellI] = max(len(v), colSize[cellI])
+			vText := formatCellValue(cell)
+			rowCells = append(rowCells, vText)
+			colSize[cellI] = max(len(vText), colSize[cellI])
 		}
 		rows = append(rows, table.Row(rowCells))
 	}
