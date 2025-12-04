@@ -2,12 +2,13 @@ package sqlcommandbar
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
-	tea "charm.land/bubbletea/v2"
 )
 
 type errMsg error
@@ -18,11 +19,22 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 
-	case sharedcomponents.SetSQLTextMsg:
-		m.textarea.SetValue(msg.Query.Compile())
+	case sharedcomponents.ExecuteSQLTextMsg:
+		m.textarea.SetValue(msg.Query)
 		m.databaseID = msg.DatabaseID
-		return m, executeSQLCommand(m.registry, msg.Query, msg.DatabaseID)
-
+		q := &sharedcomponents.BasicSQLQuery{
+			Query: msg.Query,
+		}
+		return m, executeSQLQuery(m.registry, q, msg.DatabaseID)
+	case sharedcomponents.ReapplyTableQueryMsg:
+		return m, executeSQLQuery(m.registry, msg.Query, m.databaseID)
+	case sharedcomponents.OpenTableMsg:
+		m.databaseID = msg.DatabaseID
+		return m, openTableHandler(m.registry, msg.Table, msg.DatabaseID)
+	case sharedcomponents.SQLResultMsg:
+		m.textarea.SetValue(msg.Query.Compile())
+		m.query = msg.Query
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
@@ -54,8 +66,7 @@ func (m *SQLCommandBarModel) Blur() {
 	m.textarea.Blur()
 }
 
-func executeSQLCommand(r *database.DBRegistry, q sharedcomponents.SQLQuery, databaseID string) tea.Cmd {
-	log.Println("Executing SQL command on database ID:", databaseID)
+func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, databaseID string) tea.Cmd {
 	return func() tea.Msg {
 		db := r.GetByID(databaseID)
 		if db == nil {
@@ -69,9 +80,9 @@ func executeSQLCommand(r *database.DBRegistry, q sharedcomponents.SQLQuery, data
 			// return notifications.ShowError("Database connection is nil")
 		}
 
-		log.Println("Fetching rows...")
-		rows, err := conn.Query(context.Background(), q.Compile())
-		log.Println("After query")
+		compiledQuery := q.Compile()
+		log.Printf("Executing SQL query: %s\n", compiledQuery)
+		rows, err := conn.Query(context.Background(), compiledQuery)
 		if err != nil {
 			log.Printf("Failed to execute query %s", err.Error())
 			return notifications.ShowError("Failed to execute query: " + err.Error())
@@ -101,5 +112,19 @@ func executeSQLCommand(r *database.DBRegistry, q sharedcomponents.SQLQuery, data
 			Query:      q,
 			DatabaseID: databaseID,
 		}
+	}
+}
+
+func openTableHandler(r *database.DBRegistry, table *database.Table, databaseID string) tea.Cmd {
+	log.Printf("Opening table %s\n", table.Name)
+	return func() tea.Msg {
+		baseQuery := fmt.Sprintf("SELECT * FROM \"%s\"", table.Name)
+		q := &sharedcomponents.TableQuery{
+			BaseQuery:  baseQuery,
+			Limit:      501,
+			Offset:     0,
+			DatabaseID: databaseID,
+		}
+		return executeSQLQuery(r, q, databaseID)()
 	}
 }

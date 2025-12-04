@@ -13,9 +13,6 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 
-	case sharedcomponents.SetSQLTextMsg:
-		log.Println("Get `SETSQLTEXT` message in TableViewModel")
-		// m.textarea.SetValue(msg.Command)
 	case sharedcomponents.SQLResultMsg:
 		m.handleSQLResultMsg(msg)
 		return m, nil
@@ -42,12 +39,12 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {
-	if m.query.BaseQuery == "" || m.databaseID == "" {
+	q := m.query
+	if m.databaseID == "" {
 		log.Println("Cannot sort: no base query or database ID")
 		return nil
 	}
 
-	// Convert table.SortOrder to sharedcomponents.OrderByClause
 	var orderByClauses []sharedcomponents.OrderByClause
 	columns := m.table.Columns()
 
@@ -61,21 +58,24 @@ func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {
 			Direction:  sort.Direction.String(),
 		})
 	}
-	q := m.query
-	q.SortOrders = orderByClauses
-
-	return func() tea.Msg {
-		return sharedcomponents.SetSQLTextMsg{
-			DatabaseID: m.databaseID,
-			Query:      q,
+	log.Printf("TableViewModel: handling sort change: %+v", orderByClauses)
+	switch tq := q.(type) {
+	case *sharedcomponents.TableQuery:
+		tq.HandleSortChange(orderByClauses)
+		return func() tea.Msg {
+			return sharedcomponents.ReapplyTableQueryMsg{
+				Query: tq,
+			}
 		}
 	}
+	return nil
 }
 
 func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	m.query = msg.Query
 	m.databaseID = msg.DatabaseID
 
+	sqlResult := msg.Query.SetSQLResult(&msg)
 	var columns []table.Column
 	var rows []table.Row
 
@@ -88,10 +88,10 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 		colSize = append(colSize, minColWidth)
 	}
 	var rawRows [][]any
-	if len(msg.Rows) > 500 {
-		rawRows = msg.Rows[:500]
+	if len(sqlResult.Rows) > 500 {
+		rawRows = sqlResult.Rows[:500]
 	} else {
-		rawRows = msg.Rows
+		rawRows = sqlResult.Rows
 	}
 	for _, rowData := range rawRows {
 		var rowCells []string
@@ -116,9 +116,7 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 		})
 	}
 
-	totalRows := len(msg.Rows)
-	m.totalRows = totalRows
-	m.totalRowsFetched = totalRows <= 500
+	m.canFetchTotal = sqlResult.CanFetchTotal
 
 	m.table.SetRows(nil)
 	m.table.SetColumns(columns)

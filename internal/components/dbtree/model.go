@@ -16,12 +16,14 @@ type schemaTableNode struct {
 	name     string
 	columns  []*tableColumnNode
 	expanded bool
+	table    *database.Table
 }
 
 type databaseSchemaNode struct {
 	name     string
 	tables   []*schemaTableNode
 	expanded bool
+	schema   *database.Schema
 }
 
 type databaseNode struct {
@@ -31,6 +33,7 @@ type databaseNode struct {
 	expanded bool
 	id       string
 	parsed   bool
+	db       *database.Database
 }
 
 // TreeLevel represents the depth in the tree hierarchy
@@ -68,6 +71,7 @@ func DBTreeScreen(registry *database.DBRegistry) DBTreeModel {
 			host:     db.Host,
 			expanded: false,
 			id:       db.ID,
+			db:       db,
 		})
 	}
 

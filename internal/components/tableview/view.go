@@ -43,7 +43,7 @@ func renderScrollIndicators(t table.Model, m TableViewModel) string {
 
 		currentPos := focusedRow + 1
 		totalRowsString := formatNumber(totalRows)
-		if !m.totalRowsFetched {
+		if m.canFetchTotal {
 			totalRowsString += "+"
 		}
 		indicator := lipgloss.NewStyle().
@@ -68,7 +68,7 @@ func renderScrollIndicators(t table.Model, m TableViewModel) string {
 	// Ordering indicator
 	if len(t.OrderColumns()) > 0 {
 		var orderIndicators []string
-		for _, orderCol := range m.query.SortOrders {
+		for _, orderCol := range m.query.GetSortOrders() {
 			orderIndicators = append(orderIndicators, fmt.Sprintf("%s %s", orderCol.ColumnName, orderCol.Direction))
 		}
 		indicator := lipgloss.NewStyle().

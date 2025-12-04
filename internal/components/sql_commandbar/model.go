@@ -13,7 +13,7 @@ type SQLCommandBarModel struct {
 	width      int
 	height     int
 	err        error
-	query      sharedcomponents.SQLQuery
+	query      sharedcomponents.QueryCompiler
 	databaseID string
 }
 
@@ -47,17 +47,10 @@ SELECT
     seq_scan AS "Sequential Scans",
     idx_scan AS "Index Scans"
 FROM pg_stat_user_tables
+		ORDER BY n_live_tup DESC;
 		`
-		return sharedcomponents.SetSQLTextMsg{
-			Query: sharedcomponents.SQLQuery{
-				BaseQuery: q,
-				SortOrders: []sharedcomponents.OrderByClause{
-					{
-						ColumnName: "n_live_tup",
-						Direction:  "DESC",
-					},
-				},
-			},
+		return sharedcomponents.ExecuteSQLTextMsg{
+			Query:      q,
 			DatabaseID: m.registry.GetAll()[0].ID,
 		}
 	}

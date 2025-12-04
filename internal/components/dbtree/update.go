@@ -1,7 +1,6 @@
 package dbtree
 
 import (
-	"fmt"
 	"log"
 
 	"charm.land/bubbles/v2/key"
@@ -77,7 +76,8 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			db.schemas = make([]*databaseSchemaNode, 0)
 			for _, schema := range msg.schemas {
 				db.schemas = append(db.schemas, &databaseSchemaNode{
-					name: schema.Name,
+					name:   schema.Name,
+					schema: schema,
 				})
 			}
 			db.parsed = true
@@ -91,7 +91,8 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			schema.tables = make([]*schemaTableNode, 0)
 			for _, table := range msg.tables {
 				schema.tables = append(schema.tables, &schemaTableNode{
-					name: table.Name,
+					name:  table.Name,
+					table: table,
 				})
 			}
 			schema.expanded = true
@@ -132,12 +133,11 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, DefaultKeyMap.Space):
 			m, cmd = m.handleSpace()
 		case key.Matches(msg, DefaultKeyMap.Enter):
-			log.Println("DBTreeModel: Enter key pressed")
 			if m.cursor.level() != TableLevel {
 				m, cmd = m.handleSpace()
 				return m, cmd
 			}
-			return m, handleOpenDatabase(m.getCurrentDatabase(), m.getCurrentSchema(), m.getCurrentTable())
+			return m, handleOpenTable(m.getCurrentDatabase(), m.getCurrentSchema(), m.getCurrentTable())
 		case key.Matches(msg, DefaultKeyMap.Left):
 			m = m.collapseNode()
 			m = m.adjustScrollToCursor()
@@ -363,14 +363,11 @@ func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 	}
 }
 
-func handleOpenDatabase(db *databaseNode, s *databaseSchemaNode, t *schemaTableNode) tea.Cmd {
+func handleOpenTable(db *databaseNode, s *databaseSchemaNode, t *schemaTableNode) tea.Cmd {
 	return func() tea.Msg {
-		baseQ := fmt.Sprintf("SELECT * FROM %s.%s;", s.name, t.name)
-		return sharedcomponents.SetSQLTextMsg{
-			Query: sharedcomponents.SQLQuery{
-				BaseQuery: baseQ,
-				Limit:     501,
-			},
+		t := t.table
+		return sharedcomponents.OpenTableMsg{
+			Table:      t,
 			DatabaseID: db.id,
 		}
 	}

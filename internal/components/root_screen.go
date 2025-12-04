@@ -177,7 +177,6 @@ func (m *rootScreenModel) routeToComponents(msg tea.Msg) []tea.Cmd {
 
 	msgType := sharedcomponents.GetMessageType(msg)
 	targets, shouldRoute := sharedcomponents.MessageRoutes[msgType]
-	log.Printf("Routing message of type %s to targets: %d (shouldRoute=%v)\n", msgType, targets, shouldRoute)
 
 	if !shouldRoute {
 		return cmds

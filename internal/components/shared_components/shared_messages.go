@@ -2,49 +2,40 @@ package sharedcomponents
 
 import (
 	"fmt"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/SavingFrame/dbettier/internal/database"
 )
 
-type SQLQuery struct {
-	BaseQuery  string
-	Limit      int
-	SortOrders []OrderByClause
+type QueryCompiler interface {
+	Compile() string
+	HandleSortChange(orderBy []OrderByClause) QueryCompiler
+	GetSortOrders() []OrderByClause
+	SetSQLResult(*SQLResultMsg) *SQLResult
 }
 
-func (q SQLQuery) Compile() string {
-	fullQuery := q.BaseQuery
-	if fullQuery[len(fullQuery)-1] == ';' {
-		fullQuery = fullQuery[:len(fullQuery)-1]
-	}
-	if len(q.SortOrders) > 0 {
-
-		var orderByParts []string
-		for _, sort := range q.SortOrders {
-			quotedColumn := "\"" + sort.ColumnName + "\""
-			orderByParts = append(orderByParts, quotedColumn+" "+sort.Direction)
-		}
-
-		// orderByClause := " ORDER BY " + joinStrings(orderByParts, ", ")
-		orderByClause := " ORDER BY " + strings.Join(orderByParts, ", ")
-		fullQuery = fullQuery + orderByClause
-	}
-	if q.Limit > 0 {
-		fullQuery = fmt.Sprintf("%s LIMIT %d", fullQuery, q.Limit)
-	}
-	return fullQuery
+type SQLResult struct {
+	Rows          [][]any
+	Columns       []string // Maybe change, set types for columns, etc
+	Total         int      // Total rows available (for pagination)
+	TotalFetched  int      // Total rows fetched in this result
+	CanFetchTotal bool     // Whether more rows can be fetched
 }
 
-type SetSQLTextMsg struct {
-	Query      SQLQuery
+type OpenTableMsg struct {
+	Table      *database.Table
+	DatabaseID string
+}
+
+type ExecuteSQLTextMsg struct {
+	Query      string
 	DatabaseID string
 }
 
 type SQLResultMsg struct {
-	Columns    []string
 	Rows       [][]any
-	Query      SQLQuery
+	Columns    []string // Maybe change, set types for columns, etc
+	Query      QueryCompiler
 	DatabaseID string
 }
 
@@ -62,9 +53,11 @@ const (
 )
 
 var MessageRoutes = map[string]ComponentTarget{
-	"sharedcomponents.SetSQLTextMsg":    TargetSQLCommandBar | TargetTableView,
-	"sharedcomponents.SQLResultMsg":     TargetTableView,
-	"sharedcomponents.OrderByChangeMsg": TargetSQLCommandBar,
+	"sharedcomponents.ExecuteSQLTextMsg":    TargetSQLCommandBar,
+	"sharedcomponents.SQLResultMsg":         TargetTableView | TargetSQLCommandBar,
+	"sharedcomponents.OrderByChangeMsg":     TargetSQLCommandBar,
+	"sharedcomponents.OpenTableMsg":         TargetSQLCommandBar,
+	"sharedcomponents.ReapplyTableQueryMsg": TargetSQLCommandBar,
 }
 
 func GetMessageType(msg tea.Msg) string {
