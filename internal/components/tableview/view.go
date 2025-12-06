@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 )
 
@@ -35,6 +36,14 @@ func renderScrollIndicators(t table.Model, m TableViewModel) string {
 	}
 
 	var indicators []string
+
+	// Table type indicator
+	// if m.query.(type) == nil {
+	if _, ok := m.query.(*sharedcomponents.TableQuery); ok {
+		indicators = append(indicators, " ")
+	} else {
+		indicators = append(indicators, " ")
+	}
 
 	focusedRow, focusedCol := t.FocusedPosition()
 	// Vertical scroll indicator

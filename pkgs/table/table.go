@@ -259,7 +259,12 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-// GetWidth returns the current width of the table.
+// GetHeight returns the current height of the table.
 func (m Model) GetHeight() int {
 	return m.height
+}
+
+// IsLatestRowFocused checks if the latest row is focused.
+func (m Model) IsLatestRowFocused() bool {
+	return m.focusedRow == len(m.rows)-1
 }

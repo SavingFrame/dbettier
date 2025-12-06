@@ -7,12 +7,13 @@ import (
 )
 
 type TableViewModel struct {
-	width         int
-	height        int
-	table         table.Model
-	query         sharedcomponents.QueryCompiler
-	canFetchTotal bool
-	databaseID    string // Current database ID
+	width           int
+	height          int
+	table           table.Model
+	query           sharedcomponents.QueryCompiler
+	canFetchTotal   bool
+	databaseID      string // Current database ID
+	nextPageClicked bool
 }
 
 func TableViewScreen() TableViewModel {

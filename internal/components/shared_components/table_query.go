@@ -65,3 +65,7 @@ func (q *TableQuery) SetSQLResult(msg *SQLResultMsg) *SQLResult {
 	}
 	return q.SQLResult
 }
+
+func (q *TableQuery) HasNextPage() bool {
+	return q.SQLResult == nil && len(q.SQLResult.Rows) > q.Limit-1
+}

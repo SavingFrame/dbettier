@@ -183,7 +183,7 @@ func (m Model) getCellStyle(rowIdx, colIdx int) lipgloss.Style {
 // It handles multi-byte characters properly using runewidth.
 func truncateOrPad(s string, width int) string {
 	// Account for padding (1 space on each side)
-	contentWidth := width - 2
+	contentWidth := width - 4
 	if contentWidth < 0 {
 		contentWidth = 0
 	}

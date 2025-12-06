@@ -4,11 +4,33 @@ import (
 	"fmt"
 	"log"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type KeyMap struct {
+	Enter    key.Binding
+	Quit     key.Binding
+	NextPage key.Binding
+}
+
+var DefaultKeyMap = KeyMap{
+	Enter: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "select row"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("q", "esc", "ctrl+c"),
+		key.WithHelp("q/esc/ctrl+c", "quit"),
+	),
+	NextPage: key.NewBinding(
+		key.WithKeys("G"),
+		key.WithHelp("G", "scroll down/next page"),
+	),
+}
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -23,13 +45,28 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.handleSortChange(msg)
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "enter":
+		switch {
+		case key.Matches(msg, DefaultKeyMap.Enter):
 			return m, tea.Batch(
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
 			)
-		case "q", "esc", "ctrl+c":
+		case key.Matches(msg, DefaultKeyMap.Quit):
 			return m, tea.Quit
+
+		case key.Matches(msg, DefaultKeyMap.NextPage):
+			m.table.ScrollToBottom()
+			log.Println("TableViewModel: NextPage key pressed")
+			if m.table.IsLatestRowFocused() && m.query.HasNextPage() {
+				switch m.nextPageClicked {
+				case true:
+					m.nextPageClicked = false
+					log.Println("TableViewModel: Next page already clicked, ignoring.")
+				case false:
+					m.nextPageClicked = true
+					return m, nil
+				}
+			}
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
 		// Size will be handled by root screen

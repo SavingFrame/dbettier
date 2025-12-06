@@ -29,3 +29,7 @@ func (q *BasicSQLQuery) SetSQLResult(msg *SQLResultMsg) *SQLResult {
 	}
 	return q.SQLResult
 }
+
+func (q *BasicSQLQuery) HasNextPage() bool {
+	return q.SQLResult != nil && q.SQLResult.Total >= 500
+}

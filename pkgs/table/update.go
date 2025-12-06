@@ -33,10 +33,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.focusedRow = 0
 			m.scrollOffsetRow = 0
 		case "G":
-			if len(m.rows) > 0 {
-				m.focusedRow = len(m.rows) - 1
-				m.updateScrollRow()
-			}
+			m.ScrollToBottom()
 
 		// Page navigation - vim keys
 		case "ctrl+b":
@@ -300,5 +297,12 @@ func (m Model) clearSort() (Model, tea.Cmd) {
 
 	return m, func() tea.Msg {
 		return SortChangeMsg{SortOrders: nil}
+	}
+}
+
+func (m *Model) ScrollToBottom() {
+	if len(m.rows) > 0 {
+		m.focusedRow = len(m.rows) - 1
+		m.updateScrollRow()
 	}
 }
