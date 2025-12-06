@@ -12,7 +12,13 @@ type QueryCompiler interface {
 	HandleSortChange(orderBy []OrderByClause) QueryCompiler
 	GetSortOrders() []OrderByClause
 	SetSQLResult(*SQLResultMsg) *SQLResult
+	GetSQLResult() *SQLResult
+	HasPreviousPage() bool
 	HasNextPage() bool
+	NextPage() tea.Cmd
+	PreviousPage() tea.Cmd
+	Rows() [][]any
+	PageOffset() int
 }
 
 type SQLResult struct {

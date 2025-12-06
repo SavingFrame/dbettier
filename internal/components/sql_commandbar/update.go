@@ -22,9 +22,7 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case sharedcomponents.ExecuteSQLTextMsg:
 		m.textarea.SetValue(msg.Query)
 		m.databaseID = msg.DatabaseID
-		q := &sharedcomponents.BasicSQLQuery{
-			Query: msg.Query,
-		}
+		q := sharedcomponents.NewBasicSQLQuery(msg.Query)
 		return m, executeSQLQuery(m.registry, q, msg.DatabaseID)
 	case sharedcomponents.ReapplyTableQueryMsg:
 		return m, executeSQLQuery(m.registry, msg.Query, m.databaseID)
@@ -123,12 +121,7 @@ func openTableHandler(r *database.DBRegistry, table *database.Table, databaseID 
 	log.Printf("Opening table %s\n", table.Name)
 	return func() tea.Msg {
 		baseQuery := fmt.Sprintf("SELECT * FROM \"%s\"", table.Name)
-		q := &sharedcomponents.TableQuery{
-			BaseQuery:  baseQuery,
-			Limit:      501,
-			Offset:     0,
-			DatabaseID: databaseID,
-		}
+		q := sharedcomponents.NewTableQuery(baseQuery, 500)
 		return executeSQLQuery(r, q, databaseID)()
 	}
 }

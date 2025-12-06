@@ -50,8 +50,12 @@ func renderScrollIndicators(t table.Model, m TableViewModel) string {
 	if t.GetHeight() > 2 {
 		totalRows := len(t.Rows())
 
-		currentPos := focusedRow + 1
-		totalRowsString := formatNumber(totalRows)
+		var pageOffset int
+		if m.query != nil {
+			pageOffset = m.query.PageOffset()
+		}
+		currentPos := focusedRow + 1 + pageOffset
+		totalRowsString := formatNumber(totalRows + pageOffset)
 		if m.canFetchTotal {
 			totalRowsString += "+"
 		}
@@ -91,9 +95,21 @@ func renderScrollIndicators(t table.Model, m TableViewModel) string {
 		return ""
 	}
 
-	return lipgloss.NewStyle().
+	leftSection := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240")).
 		Render(strings.Join(indicators, " | "))
+
+	// If there's a custom message, display it in the center
+	if m.customMessage != "" {
+		centerSection := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("208")).
+			Bold(true).
+			Render(m.customMessage)
+
+		return leftSection + "  " + centerSection
+	}
+
+	return leftSection
 }
 
 // formatNumber formats a number as a string.

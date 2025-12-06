@@ -12,9 +12,10 @@ import (
 )
 
 type KeyMap struct {
-	Enter    key.Binding
-	Quit     key.Binding
-	NextPage key.Binding
+	Enter        key.Binding
+	Quit         key.Binding
+	NextPage     key.Binding
+	PreviousPage key.Binding
 }
 
 var DefaultKeyMap = KeyMap{
@@ -30,6 +31,10 @@ var DefaultKeyMap = KeyMap{
 		key.WithKeys("G"),
 		key.WithHelp("G", "scroll down/next page"),
 	),
+	PreviousPage: key.NewBinding(
+		key.WithKeys("g"),
+		key.WithHelp("g", "scroll up/previous page"),
+	),
 }
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -39,6 +44,10 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case sharedcomponents.SQLResultMsg:
 		m.handleSQLResultMsg(msg)
 		return m, nil
+	case sharedcomponents.UpdateTableMsg:
+		m.query = msg.Query
+		m.updateTableData(m.query.GetSQLResult())
+		return m, nil
 
 	case table.SortChangeMsg:
 		// Table sort changed, emit OrderByChangeMsg for SQL layer
@@ -47,26 +56,52 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Enter):
-			return m, tea.Batch(
-				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
-			)
+			m.nextPageClicked = false
+			m.previousPageClicked = false
+			m.customMessage = ""
+			return m, nil
 		case key.Matches(msg, DefaultKeyMap.Quit):
+			if m.nextPageClicked || m.previousPageClicked {
+				m.nextPageClicked = false
+				m.previousPageClicked = false
+				m.customMessage = ""
+				return m, nil
+			}
 			return m, tea.Quit
 
 		case key.Matches(msg, DefaultKeyMap.NextPage):
 			m.table.ScrollToBottom()
-			log.Println("TableViewModel: NextPage key pressed")
 			if m.table.IsLatestRowFocused() && m.query.HasNextPage() {
 				switch m.nextPageClicked {
 				case true:
 					m.nextPageClicked = false
-					log.Println("TableViewModel: Next page already clicked, ignoring.")
+					m.customMessage = ""
+					return m, m.query.NextPage()
 				case false:
 					m.nextPageClicked = true
-					return m, nil
+					m.customMessage = "Click G one more time to go to the next page"
 				}
+			} else {
+				// Clear message when not at bottom or no next page
+				m.customMessage = ""
 			}
 			return m, nil
+		case key.Matches(msg, DefaultKeyMap.PreviousPage):
+			m.table.ScrollToTop()
+			if m.table.IsFirstRowFocused() && m.query.HasPreviousPage() {
+				switch m.previousPageClicked {
+				case true:
+					m.previousPageClicked = false
+					m.customMessage = ""
+					return m, m.query.PreviousPage()
+				case false:
+					m.previousPageClicked = true
+					m.customMessage = "Click g one more time to go to the previous page"
+				}
+			}
+		default:
+			m.nextPageClicked = false
+			m.customMessage = ""
 		}
 	case tea.WindowSizeMsg:
 		// Size will be handled by root screen
@@ -127,6 +162,10 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	m.databaseID = msg.DatabaseID
 
 	sqlResult := msg.Query.SetSQLResult(&msg)
+	m.updateTableData(sqlResult)
+}
+
+func (m *TableViewModel) updateTableData(r *sharedcomponents.SQLResult) {
 	var columns []table.Column
 	var rows []table.Row
 
@@ -135,16 +174,10 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 	const maxColWidth = 50
 
 	var colSize []int
-	for range msg.Columns {
+	for range r.Columns {
 		colSize = append(colSize, minColWidth)
 	}
-	var rawRows [][]any
-	if len(sqlResult.Rows) > 500 {
-		rawRows = sqlResult.Rows[:500]
-	} else {
-		rawRows = sqlResult.Rows
-	}
-	for _, rowData := range rawRows {
+	for _, rowData := range m.query.Rows() {
 		var rowCells []string
 		for cellI, cell := range rowData {
 			vText := formatCellValue(cell)
@@ -154,7 +187,7 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 		rows = append(rows, table.Row(rowCells))
 	}
 
-	for colI, colName := range msg.Columns {
+	for colI, colName := range r.Columns {
 		// Calculate column width based on column name length, with min/max bounds
 		// colWidth := max(min(colSize[colI], maxColWidth), minColWidth) + 2
 		colWidth := max(colSize[colI], len(colName)) + 5
@@ -167,7 +200,7 @@ func (m *TableViewModel) handleSQLResultMsg(msg sharedcomponents.SQLResultMsg) {
 		})
 	}
 
-	m.canFetchTotal = sqlResult.CanFetchTotal
+	m.canFetchTotal = r.CanFetchTotal
 
 	m.table.SetRows(nil)
 	m.table.SetColumns(columns)

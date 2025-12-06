@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	tea "charm.land/bubbletea/v2"
 )
 
 type TableQuery struct {
@@ -11,8 +13,15 @@ type TableQuery struct {
 	Limit      int
 	SortOrders []OrderByClause
 	Offset     int
-	DatabaseID string
 	SQLResult  *SQLResult
+}
+
+func NewTableQuery(baseQuery string, limit int) *TableQuery {
+	return &TableQuery{
+		BaseQuery: baseQuery,
+		Limit:     limit + 1,
+		Offset:    0,
+	}
 }
 
 type ReapplyTableQueryMsg struct {
@@ -66,6 +75,54 @@ func (q *TableQuery) SetSQLResult(msg *SQLResultMsg) *SQLResult {
 	return q.SQLResult
 }
 
+func (q *TableQuery) GetSQLResult() *SQLResult {
+	return q.SQLResult
+}
+
+// HasNextPage checks if there is a next page available
 func (q *TableQuery) HasNextPage() bool {
-	return q.SQLResult == nil && len(q.SQLResult.Rows) > q.Limit-1
+	return q.SQLResult != nil && len(q.SQLResult.Rows) > q.Limit-1
+}
+
+func (q *TableQuery) HasPreviousPage() bool {
+	return q.Offset > 0
+}
+
+// NextPage increments the offset and returns a message to reapply the query
+func (q *TableQuery) NextPage() tea.Cmd {
+	if !q.HasNextPage() {
+		log.Println("No next page available")
+		return nil
+	}
+	q.Offset += q.Limit - 1
+	return func() tea.Msg {
+		return ReapplyTableQueryMsg{
+			Query: q,
+		}
+	}
+}
+
+func (q *TableQuery) PreviousPage() tea.Cmd {
+	if !q.HasPreviousPage() {
+		log.Println("No previous page available")
+		return nil
+	}
+	q.Offset -= max(0, q.Limit-1)
+	return func() tea.Msg {
+		return ReapplyTableQueryMsg{
+			Query: q,
+		}
+	}
+}
+
+func (q *TableQuery) Rows() [][]any {
+	if len(q.SQLResult.Rows) > q.Limit-1 {
+		log.Printf("Returning rows for current page: limit=%d", q.Limit)
+		return q.SQLResult.Rows[:q.Limit-1]
+	}
+	return nil
+}
+
+func (q *TableQuery) PageOffset() int {
+	return q.Offset
 }

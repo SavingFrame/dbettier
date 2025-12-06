@@ -268,3 +268,8 @@ func (m Model) GetHeight() int {
 func (m Model) IsLatestRowFocused() bool {
 	return m.focusedRow == len(m.rows)-1
 }
+
+// IsFirstRowFocused checks if the first row is focused.
+func (m Model) IsFirstRowFocused() bool {
+	return m.focusedRow == 0
+}

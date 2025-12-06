@@ -30,8 +30,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		// Jump to start/end - vim keys
 		case "g":
-			m.focusedRow = 0
-			m.scrollOffsetRow = 0
+			m.ScrollToTop()
 		case "G":
 			m.ScrollToBottom()
 
@@ -305,4 +304,9 @@ func (m *Model) ScrollToBottom() {
 		m.focusedRow = len(m.rows) - 1
 		m.updateScrollRow()
 	}
+}
+
+func (m *Model) ScrollToTop() {
+	m.focusedRow = 0
+	m.scrollOffsetRow = 0
 }

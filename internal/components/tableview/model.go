@@ -7,13 +7,15 @@ import (
 )
 
 type TableViewModel struct {
-	width           int
-	height          int
-	table           table.Model
-	query           sharedcomponents.QueryCompiler
-	canFetchTotal   bool
-	databaseID      string // Current database ID
-	nextPageClicked bool
+	width               int
+	height              int
+	table               table.Model
+	query               sharedcomponents.QueryCompiler
+	canFetchTotal       bool
+	databaseID          string // Current database ID
+	nextPageClicked     bool   // TODO: Maybe need to change to waitAction or something
+	previousPageClicked bool   // TODO: Maybe need to change to waitAction or something
+	customMessage       string // Custom message to display in scroll indicators
 }
 
 func TableViewScreen() TableViewModel {
