@@ -10,6 +10,7 @@ import (
 	"github.com/SavingFrame/dbettier/internal/database"
 )
 
+// KeyMap defines keybindings for the database tree component
 type KeyMap struct {
 	Up         key.Binding
 	Down       key.Binding
@@ -19,9 +20,10 @@ type KeyMap struct {
 	ScrollUp   key.Binding
 	ScrollDown key.Binding
 	Enter      key.Binding
-	Quite      key.Binding
+	Quit       key.Binding
 }
 
+// DefaultKeyMap returns the default keybindings for the database tree
 var DefaultKeyMap = KeyMap{
 	Up: key.NewBinding(
 		key.WithKeys("k", "up"),
@@ -33,15 +35,15 @@ var DefaultKeyMap = KeyMap{
 	),
 	Left: key.NewBinding(
 		key.WithKeys("h", "left"),
-		key.WithHelp("</h", "collapse node"),
+		key.WithHelp("←/h", "collapse"),
 	),
 	Right: key.NewBinding(
 		key.WithKeys("l", "right"),
-		key.WithHelp(">/l", "expand node"),
+		key.WithHelp("→/l", "expand"),
 	),
 	Space: key.NewBinding(
 		key.WithKeys("space", " "),
-		key.WithHelp("space", "select/expand"),
+		key.WithHelp("space", "toggle"),
 	),
 	ScrollDown: key.NewBinding(
 		key.WithKeys("ctrl+d"),
@@ -53,12 +55,27 @@ var DefaultKeyMap = KeyMap{
 	),
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
-		key.WithHelp("enter", "open"),
+		key.WithHelp("enter", "open table"),
 	),
-	Quite: key.NewBinding(
-		key.WithKeys("q", "ctrl+c", "esc"),
-		key.WithHelp("q/ctrl+c/esc", "quit"),
+	Quit: key.NewBinding(
+		key.WithKeys("q", "esc"),
+		key.WithHelp("q/esc", "quit"),
 	),
+}
+
+// ShortHelp returns keybindings for the short help view
+func (k KeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.Enter, k.Quit}
+}
+
+// FullHelp returns keybindings for the expanded help view
+func (k KeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down, k.Left, k.Right},
+		{k.Space, k.Enter},
+		{k.ScrollUp, k.ScrollDown},
+		{k.Quit},
+	}
 }
 
 func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -156,7 +173,7 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m, _ = m.moveCursorUp()
 			}
 			m = m.adjustScrollToCursor()
-		case key.Matches(msg, DefaultKeyMap.Quite):
+		case key.Matches(msg, DefaultKeyMap.Quit):
 			return m, tea.Quit
 		}
 	}

@@ -5,11 +5,42 @@ import (
 	"fmt"
 	"log"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
 )
+
+// KeyMap defines keybindings for the SQL command bar component
+type KeyMap struct {
+	Execute key.Binding
+	Quit    key.Binding
+}
+
+// DefaultKeyMap returns the default keybindings for the SQL command bar
+var DefaultKeyMap = KeyMap{
+	Execute: key.NewBinding(
+		key.WithKeys("ctrl+enter"),
+		key.WithHelp("ctrl+enter", "execute SQL"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("ctrl+c"),
+		key.WithHelp("ctrl+c", "quit"),
+	),
+}
+
+// ShortHelp returns keybindings for the short help view
+func (k KeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Execute, k.Quit}
+}
+
+// FullHelp returns keybindings for the expanded help view
+func (k KeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Execute, k.Quit},
+	}
+}
 
 type errMsg error
 

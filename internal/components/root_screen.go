@@ -4,6 +4,8 @@ import (
 	"log"
 	"time"
 
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/SavingFrame/dbettier/internal/components/dbtree"
@@ -40,6 +42,10 @@ type rootScreenModel struct {
 	width        int
 	height       int
 	registry     *database.DBRegistry
+
+	// Help
+	help help.Model
+	keys GlobalKeyMap
 }
 
 func RootScreen(registry *database.DBRegistry) rootScreenModel {
@@ -50,6 +56,8 @@ func RootScreen(registry *database.DBRegistry) rootScreenModel {
 		sqlCommandBar: sqlcommandbar.SQLCommandBarScreen(registry),
 		focusedPane:   FocusDBTree,
 		registry:      registry,
+		help:          help.New(),
+		keys:          DefaultGlobalKeyMap,
 	}
 }
 
@@ -89,30 +97,43 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
+		// Update help width for proper truncation
+		m.help.SetWidth(msg.Width)
+
+		// Reserve space for short help bar at bottom (1 line)
+		helpHeight := 1
+		availableHeight := m.height - helpHeight
+
 		// Calculate dimensions for each component
 		leftWidth := int(float64(m.width) * DBTreeWidthRatio)
 		rightWidth := m.width - leftWidth
-		SQLCommandBarHeight := int(float64(m.height) * (float64(SQLCommandBarHeightRatio) / 100.0))
-		tableViewHeight := m.height - SQLCommandBarHeight
+		SQLCommandBarHeight := int(float64(availableHeight) * (float64(SQLCommandBarHeightRatio) / 100.0))
+		tableViewHeight := availableHeight - SQLCommandBarHeight
 
 		// Update component sizes (accounting for borders: 2 per side = 4 for width, 2 for height)
 		// Each border style will add 2 to width and 2 to height, so we subtract those
-		m.dbtree.SetSize(leftWidth-4, m.height-2)
+		m.dbtree.SetSize(leftWidth-4, availableHeight-2)
 		m.tableview.SetSize(rightWidth-4, tableViewHeight-2)
 		m.sqlCommandBar.SetSize(rightWidth-4, SQLCommandBarHeight)
 		return m, nil
 
 	case tea.KeyMsg:
+		// Handle help toggle first
+		if key.Matches(msg, m.keys.Help) {
+			m.help.ShowAll = !m.help.ShowAll
+			return m, nil
+		}
+
 		// Handle focus switching with ctrl+h and ctrl+l
-		switch msg.String() {
-		case "ctrl+h":
+		switch {
+		case key.Matches(msg, m.keys.FocusLeft):
 			oldFocus := m.focusedPane
 			m.focusedPane = FocusDBTree
 			if oldFocus == FocusSQLCommandBar {
 				m.sqlCommandBar.Blur()
 			}
 			return m, nil
-		case "ctrl+l":
+		case key.Matches(msg, m.keys.FocusNext):
 			oldFocus := m.focusedPane
 			oldFocusIndex := 0
 			for i, pane := range paneOrder {
@@ -126,7 +147,7 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.sqlCommandBar.Focus()
 			}
 			return m, nil
-		case "ctrl+k":
+		case key.Matches(msg, m.keys.FocusPrev):
 			oldFocus := m.focusedPane
 			oldFocusIndex := 0
 			for i, pane := range paneOrder {
@@ -212,8 +233,17 @@ func (m rootScreenModel) View() tea.View {
 
 	baseView := m.renderSplitLayout()
 
+	// Render short help bar at the bottom (always visible)
+	shortHelpView := m.help.ShortHelpView(m.getContextKeyMap().ShortHelp())
+	fullView := lipgloss.JoinVertical(lipgloss.Left, baseView, shortHelpView)
+
+	// If full help is toggled, render it as a centered popup overlay
+	if m.help.ShowAll && m.width > 0 && m.height > 0 {
+		fullView = m.renderWithHelpPopup(fullView)
+	}
+
 	if m.notification == nil {
-		v.SetContent(baseView)
+		v.SetContent(fullView)
 		return v
 	}
 
@@ -225,15 +255,45 @@ func (m rootScreenModel) View() tea.View {
 		// Use Canvas and Layers for compositing notification overlay
 		notifWidth := lipgloss.Width(notifView)
 		canvas := lipgloss.NewCanvas(
-			lipgloss.NewLayer(baseView),
+			lipgloss.NewLayer(fullView),
 			lipgloss.NewLayer(notifView).X(m.width-notifWidth).Y(0),
 		)
 		v.SetContent(canvas.Render())
 		return v
 	}
 
-	v.SetContent(notifView + "\n" + baseView)
+	v.SetContent(notifView + "\n" + fullView)
 	return v
+}
+
+// renderWithHelpPopup renders the full help as a centered popup overlay
+func (m rootScreenModel) renderWithHelpPopup(baseView string) string {
+	fullHelpContent := m.help.FullHelpView(m.getContextKeyMap().FullHelp())
+
+	popupStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(1, 2)
+
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		MarginBottom(1)
+
+	title := titleStyle.Render("Keyboard Shortcuts")
+	helpPopup := popupStyle.Render(lipgloss.JoinVertical(lipgloss.Left, title, fullHelpContent))
+
+	popupWidth := lipgloss.Width(helpPopup)
+	popupHeight := lipgloss.Height(helpPopup)
+	x := (m.width - popupWidth) / 2
+	y := (m.height - popupHeight) / 2
+	x = max(0, x)
+	y = max(0, y)
+
+	canvas := lipgloss.NewCanvas(
+		lipgloss.NewLayer(baseView),
+		lipgloss.NewLayer(helpPopup).X(x).Y(y),
+	)
+
+	return canvas.Render()
 }
 
 func (m rootScreenModel) renderSplitLayout() string {
@@ -264,11 +324,13 @@ func (m rootScreenModel) renderDBTree() string {
 	// Calculate fixed width for dbtree
 	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
 
+	helpHeight := 1
+
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
 		Width(leftWidth - 4). // Subtract 4 for border padding
-		Height(m.height)
+		Height(m.height - helpHeight)
 
 	content := m.dbtree.RenderContent()
 	return borderStyle.Render(content)
@@ -298,10 +360,59 @@ func (m rootScreenModel) renderSQLCommandBar() string {
 
 	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
 	_, tableViewY := m.tableview.GetSize()
+
+	helpHeight := 1
+
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(borderColor).Width(m.width - leftWidth).Height(m.height - tableViewY)
+		BorderForeground(borderColor).Width(m.width - leftWidth).Height(m.height - tableViewY - helpHeight)
 
 	content := m.sqlCommandBar.RenderContent()
 	return borderStyle.Render(content)
+}
+
+// combinedKeyMap combines global keys with focused pane keys for help display
+type combinedKeyMap struct {
+	global       GlobalKeyMap
+	paneKeys     []key.Binding
+	fullPaneKeys [][]key.Binding
+}
+
+// ShortHelp returns keybindings for the short help view
+func (k combinedKeyMap) ShortHelp() []key.Binding {
+	bindings := k.paneKeys
+	bindings = append(bindings, k.global.Help, k.global.Quit)
+	return bindings
+}
+
+// FullHelp returns keybindings for the expanded help view
+func (k combinedKeyMap) FullHelp() [][]key.Binding {
+	result := k.fullPaneKeys
+	// Add global keys as the last column
+	result = append(result, []key.Binding{k.global.FocusLeft, k.global.FocusNext, k.global.FocusPrev, k.global.Help, k.global.Quit})
+	return result
+}
+
+// getContextKeyMap returns a combined keymap for the currently focused pane
+func (m rootScreenModel) getContextKeyMap() combinedKeyMap {
+	combined := combinedKeyMap{
+		global: m.keys,
+	}
+
+	switch m.focusedPane {
+	case FocusDBTree:
+		keys := dbtree.DefaultKeyMap
+		combined.paneKeys = keys.ShortHelp()
+		combined.fullPaneKeys = keys.FullHelp()
+	case FocusTableView:
+		keys := tableview.DefaultKeyMap
+		combined.paneKeys = keys.ShortHelp()
+		combined.fullPaneKeys = keys.FullHelp()
+	case FocusSQLCommandBar:
+		keys := sqlcommandbar.DefaultKeyMap
+		combined.paneKeys = keys.ShortHelp()
+		combined.fullPaneKeys = keys.FullHelp()
+	}
+
+	return combined
 }

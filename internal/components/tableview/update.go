@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// KeyMap defines keybindings for the table view component
 type KeyMap struct {
 	Enter        key.Binding
 	Quit         key.Binding
@@ -18,23 +19,37 @@ type KeyMap struct {
 	PreviousPage key.Binding
 }
 
+// DefaultKeyMap returns the default keybindings for the table view
 var DefaultKeyMap = KeyMap{
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
 		key.WithHelp("enter", "select row"),
 	),
 	Quit: key.NewBinding(
-		key.WithKeys("q", "esc", "ctrl+c"),
-		key.WithHelp("q/esc/ctrl+c", "quit"),
+		key.WithKeys("q", "esc"),
+		key.WithHelp("q/esc", "quit"),
 	),
 	NextPage: key.NewBinding(
 		key.WithKeys("G"),
-		key.WithHelp("G", "scroll down/next page"),
+		key.WithHelp("G", "bottom/next page"),
 	),
 	PreviousPage: key.NewBinding(
 		key.WithKeys("g"),
-		key.WithHelp("g", "scroll up/previous page"),
+		key.WithHelp("g", "top/prev page"),
 	),
+}
+
+// ShortHelp returns keybindings for the short help view
+func (k KeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.NextPage, k.PreviousPage, k.Quit}
+}
+
+// FullHelp returns keybindings for the expanded help view
+func (k KeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.NextPage, k.PreviousPage},
+		{k.Enter, k.Quit},
+	}
 }
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
