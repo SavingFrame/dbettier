@@ -29,6 +29,12 @@ type OrderCol struct {
 	Direction   SortDirection
 }
 
+// SearchMatch represents a cell that matches the search query.
+type SearchMatch struct {
+	Row int
+	Col int
+}
+
 // Model defines the state for the table widget with cell-level focus.
 type Model struct {
 	cols []Column
@@ -53,6 +59,12 @@ type Model struct {
 
 	// Sorting
 	orderColumns []OrderCol
+
+	// Search
+	searchMode       bool          // Whether search input is active
+	searchQuery      string        // Current search query
+	searchMatches    []SearchMatch // All matching cells
+	searchMatchIndex int           // Current match index (-1 if no matches)
 }
 
 // Row represents one line in the table.
@@ -66,11 +78,13 @@ type Column struct {
 
 // Styles contains style definitions for the table component.
 type Styles struct {
-	Header       lipgloss.Style
-	Cell         lipgloss.Style
-	SelectedCell lipgloss.Style
-	SelectedRow  lipgloss.Style
-	SelectedCol  lipgloss.Style
+	Header            lipgloss.Style
+	Cell              lipgloss.Style
+	SelectedCell      lipgloss.Style
+	SelectedRow       lipgloss.Style
+	SelectedCol       lipgloss.Style
+	SearchMatch       lipgloss.Style // Highlighted search match
+	SearchMatchActive lipgloss.Style // Currently focused search match
 }
 
 // DefaultStyles returns a set of default style definitions for this table.
@@ -95,6 +109,15 @@ func DefaultStyles() Styles {
 		SelectedCol: lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(lipgloss.Color("237")),
+		SearchMatch: lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(lipgloss.Color("136")). // Yellow background
+			Foreground(lipgloss.Color("0")),   // Black text
+		SearchMatchActive: lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(lipgloss.Color("208")). // Orange background for current match
+			Foreground(lipgloss.Color("0")).   // Black text
+			Bold(true),
 	}
 }
 
@@ -272,4 +295,29 @@ func (m Model) IsLatestRowFocused() bool {
 // IsFirstRowFocused checks if the first row is focused.
 func (m Model) IsFirstRowFocused() bool {
 	return m.focusedRow == 0
+}
+
+// SearchMode returns whether search mode is active.
+func (m Model) SearchMode() bool {
+	return m.searchMode
+}
+
+// SearchQuery returns the current search query.
+func (m Model) SearchQuery() string {
+	return m.searchQuery
+}
+
+// SearchMatches returns the search matches.
+func (m Model) SearchMatches() []SearchMatch {
+	return m.searchMatches
+}
+
+// SearchMatchIndex returns the current search match index.
+func (m Model) SearchMatchIndex() int {
+	return m.searchMatchIndex
+}
+
+// SearchMatchCount returns the number of search matches.
+func (m Model) SearchMatchCount() int {
+	return len(m.searchMatches)
 }

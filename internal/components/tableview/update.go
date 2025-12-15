@@ -48,42 +48,37 @@ func (k KeyMap) ShortHelp() []key.Binding {
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.NextPage, k.PreviousPage},
-		{k.Enter, k.Quit},
+		{k.Quit},
 	}
 }
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
+	m.table, cmd = m.table.Update(msg)
+	cmds = append(cmds, cmd)
 	switch msg := msg.(type) {
-
 	case sharedcomponents.SQLResultMsg:
 		m.handleSQLResultMsg(msg)
-		return m, nil
 	case sharedcomponents.UpdateTableMsg:
 		m.query = msg.Query
 		m.updateTableData(m.query.GetSQLResult())
-		return m, nil
-
 	case table.SortChangeMsg:
-		// Table sort changed, emit OrderByChangeMsg for SQL layer
-		return m, m.handleSortChange(msg)
-
+		cmds = append(cmds, m.handleSortChange(msg))
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Enter):
 			m.nextPageClicked = false
 			m.previousPageClicked = false
 			m.customMessage = ""
-			return m, nil
 		case key.Matches(msg, DefaultKeyMap.Quit):
 			if m.nextPageClicked || m.previousPageClicked {
 				m.nextPageClicked = false
 				m.previousPageClicked = false
 				m.customMessage = ""
-				return m, nil
+			} else {
+				cmds = append(cmds, tea.Quit)
 			}
-			return m, tea.Quit
-
 		case key.Matches(msg, DefaultKeyMap.NextPage):
 			m.table.ScrollToBottom()
 			if m.table.IsLatestRowFocused() && m.query.HasNextPage() {
@@ -91,7 +86,7 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case true:
 					m.nextPageClicked = false
 					m.customMessage = ""
-					return m, m.query.NextPage()
+					cmds = append(cmds, m.query.NextPage())
 				case false:
 					m.nextPageClicked = true
 					m.customMessage = "Click G one more time to go to the next page"
@@ -100,7 +95,6 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Clear message when not at bottom or no next page
 				m.customMessage = ""
 			}
-			return m, nil
 		case key.Matches(msg, DefaultKeyMap.PreviousPage):
 			m.table.ScrollToTop()
 			if m.table.IsFirstRowFocused() && m.query.HasPreviousPage() {
@@ -108,7 +102,7 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case true:
 					m.previousPageClicked = false
 					m.customMessage = ""
-					return m, m.query.PreviousPage()
+					cmds = append(cmds, m.query.PreviousPage())
 				case false:
 					m.previousPageClicked = true
 					m.customMessage = "Click g one more time to go to the previous page"
@@ -118,12 +112,8 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.nextPageClicked = false
 			m.customMessage = ""
 		}
-	case tea.WindowSizeMsg:
-		// Size will be handled by root screen
-		return m, nil
 	}
-	m.table, cmd = m.table.Update(msg)
-	return m, cmd
+	return m, tea.Batch(cmds...)
 }
 
 func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {

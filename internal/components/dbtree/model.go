@@ -54,6 +54,13 @@ type treeCursor struct {
 	path []int
 }
 
+// TreeSearchMatch represents a match in the tree.
+// Path follows same format as treeCursor.path
+type TreeSearchMatch struct {
+	Path []int
+	Name string // The matched name (for display)
+}
+
 type DBTreeModel struct {
 	cursor       treeCursor
 	databases    []*databaseNode
@@ -61,6 +68,12 @@ type DBTreeModel struct {
 	windowHeight int
 	windowWidth  int
 	scrollOffset int
+
+	// Search
+	searchMode       bool              // Whether search input is active
+	searchQuery      string            // Current search query
+	searchMatches    []TreeSearchMatch // All matching nodes
+	searchMatchIndex int               // Current match index (-1 if no matches)
 }
 
 func DBTreeScreen(registry *database.DBRegistry) DBTreeModel {
@@ -318,6 +331,34 @@ func (m DBTreeModel) getLastVisibleDescendantAtPath(path []int) []int {
 
 	// Column level - no children
 	return path
+}
+
+// isSearchMatch checks if a path matches any search result.
+// Returns (isMatch, isActiveMatch)
+func (m DBTreeModel) isSearchMatch(path []int) (bool, bool) {
+	if len(m.searchMatches) == 0 {
+		return false, false
+	}
+
+	for i, match := range m.searchMatches {
+		if pathsEqual(path, match.Path) {
+			return true, i == m.searchMatchIndex
+		}
+	}
+	return false, false
+}
+
+// pathsEqual compares two paths for equality.
+func pathsEqual(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // TODO: Refactor to avoid code duplication with rendering logic

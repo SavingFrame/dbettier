@@ -7,6 +7,15 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
+// SearchExitMsg is sent when search mode is exited.
+type SearchExitMsg struct{}
+
+// SearchUpdateMsg is sent when search query changes.
+type SearchUpdateMsg struct {
+	Query   string
+	Matches int
+}
+
 // Update handles messages and updates the table state.
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if !m.focused {
@@ -15,7 +24,34 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Handle search mode input
+		if m.searchMode {
+			return m.handleSearchInput(msg)
+		}
+
 		switch msg.String() {
+		// Enter search mode
+		case "/":
+			m.searchMode = true
+			m.searchQuery = ""
+			m.searchMatches = nil
+			m.searchMatchIndex = -1
+			return m, nil
+
+		// Navigate to next search match
+		case "n":
+			if len(m.searchMatches) > 0 {
+				m.nextSearchMatch()
+			}
+			return m, nil
+
+		// Navigate to previous search match
+		case "N":
+			if len(m.searchMatches) > 0 {
+				m.prevSearchMatch()
+			}
+			return m, nil
+
 		// Row navigation (up/down) - vim keys
 		case "k":
 			m.moveUp()
@@ -59,6 +95,126 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+// handleSearchInput handles key input during search mode.
+func (m Model) handleSearchInput(msg tea.KeyMsg) (Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		// Exit search mode and clear highlights
+		m.searchMode = false
+		m.searchQuery = ""
+		m.searchMatches = nil
+		m.searchMatchIndex = -1
+		return m, func() tea.Msg { return SearchExitMsg{} }
+
+	case "enter":
+		// Confirm search and exit search mode (keep highlights until next search)
+		m.searchMode = false
+		if len(m.searchMatches) > 0 && m.searchMatchIndex >= 0 {
+			// Jump to current match
+			match := m.searchMatches[m.searchMatchIndex]
+			m.focusedRow = match.Row
+			m.focusedCol = match.Col
+			m.updateScrollRow()
+			m.updateScrollCol()
+		}
+		return m, nil
+
+	case "backspace":
+		if len(m.searchQuery) > 0 {
+			m.searchQuery = m.searchQuery[:len(m.searchQuery)-1]
+			m.updateSearchMatches()
+		}
+		return m, func() tea.Msg {
+			return SearchUpdateMsg{Query: m.searchQuery, Matches: len(m.searchMatches)}
+		}
+
+	default:
+		// Add character to search query (only printable characters)
+		if len(msg.String()) == 1 && msg.String()[0] >= 32 && msg.String()[0] < 127 {
+			m.searchQuery += msg.String()
+			m.updateSearchMatches()
+			return m, func() tea.Msg {
+				return SearchUpdateMsg{Query: m.searchQuery, Matches: len(m.searchMatches)}
+			}
+		}
+	}
+
+	return m, nil
+}
+
+// updateSearchMatches finds all cells matching the search query.
+func (m *Model) updateSearchMatches() {
+	m.searchMatches = nil
+	m.searchMatchIndex = -1
+
+	if m.searchQuery == "" {
+		return
+	}
+
+	query := strings.ToLower(m.searchQuery)
+
+	for rowIdx, row := range m.rows {
+		for colIdx, cell := range row {
+			if strings.Contains(strings.ToLower(cell), query) {
+				m.searchMatches = append(m.searchMatches, SearchMatch{
+					Row: rowIdx,
+					Col: colIdx,
+				})
+			}
+		}
+	}
+
+	// If we have matches, set index to first match
+	if len(m.searchMatches) > 0 {
+		m.searchMatchIndex = 0
+		// Jump to first match
+		match := m.searchMatches[0]
+		m.focusedRow = match.Row
+		m.focusedCol = match.Col
+		m.updateScrollRow()
+		m.updateScrollCol()
+	}
+}
+
+// nextSearchMatch moves to the next search match.
+func (m *Model) nextSearchMatch() {
+	if len(m.searchMatches) == 0 {
+		return
+	}
+
+	m.searchMatchIndex = (m.searchMatchIndex + 1) % len(m.searchMatches)
+	match := m.searchMatches[m.searchMatchIndex]
+	m.focusedRow = match.Row
+	m.focusedCol = match.Col
+	m.updateScrollRow()
+	m.updateScrollCol()
+}
+
+// prevSearchMatch moves to the previous search match.
+func (m *Model) prevSearchMatch() {
+	if len(m.searchMatches) == 0 {
+		return
+	}
+
+	m.searchMatchIndex--
+	if m.searchMatchIndex < 0 {
+		m.searchMatchIndex = len(m.searchMatches) - 1
+	}
+	match := m.searchMatches[m.searchMatchIndex]
+	m.focusedRow = match.Row
+	m.focusedCol = match.Col
+	m.updateScrollRow()
+	m.updateScrollCol()
+}
+
+// ClearSearch clears the search state.
+func (m *Model) ClearSearch() {
+	m.searchMode = false
+	m.searchQuery = ""
+	m.searchMatches = nil
+	m.searchMatchIndex = -1
 }
 
 // moveUp moves the focus up one row.

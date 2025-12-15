@@ -2,6 +2,7 @@ package dbtree
 
 import (
 	"log"
+	"strings"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -12,15 +13,18 @@ import (
 
 // KeyMap defines keybindings for the database tree component
 type KeyMap struct {
-	Up         key.Binding
-	Down       key.Binding
-	Left       key.Binding
-	Right      key.Binding
-	Space      key.Binding
-	ScrollUp   key.Binding
-	ScrollDown key.Binding
-	Enter      key.Binding
-	Quit       key.Binding
+	Up              key.Binding
+	Down            key.Binding
+	Left            key.Binding
+	Right           key.Binding
+	Space           key.Binding
+	Search          key.Binding
+	SearchNextMatch key.Binding
+	SearchPrevMatch key.Binding
+	ScrollUp        key.Binding
+	ScrollDown      key.Binding
+	Enter           key.Binding
+	Quit            key.Binding
 }
 
 // DefaultKeyMap returns the default keybindings for the database tree
@@ -60,6 +64,18 @@ var DefaultKeyMap = KeyMap{
 	Quit: key.NewBinding(
 		key.WithKeys("q", "esc"),
 		key.WithHelp("q/esc", "quit"),
+	),
+	Search: key.NewBinding(
+		key.WithKeys("/"),
+		key.WithHelp("/", "search"),
+	),
+	SearchNextMatch: key.NewBinding(
+		key.WithKeys("n"),
+		key.WithHelp("n", "next match"),
+	),
+	SearchPrevMatch: key.NewBinding(
+		key.WithKeys("N"),
+		key.WithHelp("N", "previous match"),
 	),
 }
 
@@ -140,6 +156,10 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, msg.notification
 
 	case tea.KeyMsg:
+		// Handle search mode input
+		if m.searchMode {
+			return m.handleSearchInput(msg)
+		}
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Up):
 			m, cmd = m.moveCursorUp()
@@ -175,6 +195,24 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m = m.adjustScrollToCursor()
 		case key.Matches(msg, DefaultKeyMap.Quit):
 			return m, tea.Quit
+		case key.Matches(msg, DefaultKeyMap.Search):
+			m.searchMode = true
+			m.searchQuery = ""
+			m.searchMatches = nil
+			m.searchMatchIndex = -1
+			return m, nil
+		case key.Matches(msg, DefaultKeyMap.SearchNextMatch):
+			if len(m.searchMatches) > 0 {
+				m.nextSearchMatch()
+				m = m.adjustScrollToCursor()
+			}
+			return m, nil
+		case key.Matches(msg, DefaultKeyMap.SearchPrevMatch):
+			if len(m.searchMatches) > 0 {
+				m.prevSearchMatch()
+				m = m.adjustScrollToCursor()
+			}
+			return m, nil
 		}
 	}
 	return m, cmd
@@ -477,4 +515,151 @@ func (m DBTreeModel) adjustScrollToCursor() DBTreeModel {
 		m.scrollOffset = 0
 	}
 	return m
+}
+
+// handleSearchInput handles key input during search mode.
+func (m DBTreeModel) handleSearchInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		// Exit search mode and clear highlights
+		m.searchMode = false
+		m.searchQuery = ""
+		m.searchMatches = nil
+		m.searchMatchIndex = -1
+		return m, nil
+
+	case "enter":
+		// Confirm search and exit search mode
+		m.searchMode = false
+		if len(m.searchMatches) > 0 && m.searchMatchIndex >= 0 {
+			// Jump to current match
+			match := m.searchMatches[m.searchMatchIndex]
+			m.cursor.path = make([]int, len(match.Path))
+			copy(m.cursor.path, match.Path)
+			m = m.adjustScrollToCursor()
+		}
+		return m, nil
+
+	case "backspace":
+		if len(m.searchQuery) > 0 {
+			m.searchQuery = m.searchQuery[:len(m.searchQuery)-1]
+			m.updateSearchMatches()
+		}
+		return m, nil
+
+	default:
+		// Add character to search query (only printable characters)
+		if len(msg.String()) == 1 && msg.String()[0] >= 32 && msg.String()[0] < 127 {
+			m.searchQuery += msg.String()
+			m.updateSearchMatches()
+			return m, nil
+		}
+	}
+
+	return m, nil
+}
+
+// updateSearchMatches finds all tree nodes matching the search query.
+func (m *DBTreeModel) updateSearchMatches() {
+	m.searchMatches = nil
+	m.searchMatchIndex = -1
+
+	if m.searchQuery == "" {
+		return
+	}
+
+	query := strings.ToLower(m.searchQuery)
+
+	// Search through all visible nodes in the tree
+	for dbIdx, db := range m.databases {
+		// Check database name
+		if strings.Contains(strings.ToLower(db.name), query) {
+			m.searchMatches = append(m.searchMatches, TreeSearchMatch{
+				Path: []int{dbIdx},
+				Name: db.name,
+			})
+		}
+
+		// Search in schemas (only if database is expanded)
+		if db.expanded {
+			for schemaIdx, schema := range db.schemas {
+				// Check schema name
+				if strings.Contains(strings.ToLower(schema.name), query) {
+					m.searchMatches = append(m.searchMatches, TreeSearchMatch{
+						Path: []int{dbIdx, schemaIdx},
+						Name: schema.name,
+					})
+				}
+
+				// Search in tables (only if schema is expanded)
+				if schema.expanded {
+					for tableIdx, table := range schema.tables {
+						// Check table name
+						if strings.Contains(strings.ToLower(table.name), query) {
+							m.searchMatches = append(m.searchMatches, TreeSearchMatch{
+								Path: []int{dbIdx, schemaIdx, tableIdx},
+								Name: table.name,
+							})
+						}
+
+						// Search in columns (only if table is expanded)
+						if table.expanded {
+							for colIdx, col := range table.columns {
+								// Check column name
+								if strings.Contains(strings.ToLower(col.name), query) {
+									m.searchMatches = append(m.searchMatches, TreeSearchMatch{
+										Path: []int{dbIdx, schemaIdx, tableIdx, colIdx},
+										Name: col.name,
+									})
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// If we have matches, set index to first match and jump to it
+	if len(m.searchMatches) > 0 {
+		m.searchMatchIndex = 0
+		match := m.searchMatches[0]
+		m.cursor.path = make([]int, len(match.Path))
+		copy(m.cursor.path, match.Path)
+	}
+}
+
+// nextSearchMatch moves to the next search match.
+func (m *DBTreeModel) nextSearchMatch() {
+	if len(m.searchMatches) == 0 {
+		return
+	}
+
+	m.searchMatchIndex = (m.searchMatchIndex + 1) % len(m.searchMatches)
+	match := m.searchMatches[m.searchMatchIndex]
+	m.cursor.path = make([]int, len(match.Path))
+	copy(m.cursor.path, match.Path)
+}
+
+// prevSearchMatch moves to the previous search match.
+func (m *DBTreeModel) prevSearchMatch() {
+	if len(m.searchMatches) == 0 {
+		return
+	}
+
+	m.searchMatchIndex--
+	if m.searchMatchIndex < 0 {
+		m.searchMatchIndex = len(m.searchMatches) - 1
+	}
+	match := m.searchMatches[m.searchMatchIndex]
+	m.cursor.path = make([]int, len(match.Path))
+	copy(m.cursor.path, match.Path)
+}
+
+// ClearSearch clears the search state.
+func (m *DBTreeModel) ClearSearch() {
+	m.searchMode = false
+	m.searchQuery = ""
+	m.searchMatches = nil
+	m.searchMatchIndex = -1
 }

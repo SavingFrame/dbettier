@@ -29,7 +29,39 @@ func (m Model) View() string {
 		s.WriteString(m.renderScrollIndicators())
 	}
 
+	// Render search bar if in search mode or has matches
+	if m.searchMode || len(m.searchMatches) > 0 {
+		s.WriteString("\n")
+		s.WriteString(m.renderSearchBar())
+	}
+
 	return s.String()
+}
+
+// renderSearchBar renders the search input bar.
+func (m Model) renderSearchBar() string {
+	searchStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240"))
+
+	if m.searchMode {
+		// Active search input
+		cursor := "_"
+		matchInfo := ""
+		if len(m.searchMatches) > 0 {
+			matchInfo = fmt.Sprintf(" [%d/%d]", m.searchMatchIndex+1, len(m.searchMatches))
+		} else if m.searchQuery != "" {
+			matchInfo = " [no matches]"
+		}
+		return searchStyle.Render(fmt.Sprintf("/%s%s%s", m.searchQuery, cursor, matchInfo))
+	}
+
+	// Not in search mode but showing match count
+	if len(m.searchMatches) > 0 {
+		return searchStyle.Render(fmt.Sprintf("Search: %q [%d/%d] (n/N to navigate)",
+			m.searchQuery, m.searchMatchIndex+1, len(m.searchMatches)))
+	}
+
+	return ""
 }
 
 // renderHeader renders the table header (with horizontal scrolling).
@@ -160,9 +192,22 @@ func (m Model) getCellStyle(rowIdx, colIdx int) lipgloss.Style {
 		return m.styles.Cell
 	}
 
+	// Check if this cell is a search match
+	isSearchMatch, isActiveMatch := m.isSearchMatch(rowIdx, colIdx)
+
+	// Active search match (current match) - highest priority when searching
+	if isActiveMatch {
+		return m.styles.SearchMatchActive
+	}
+
 	// Exact cell is focused - highest priority
 	if rowIdx == m.focusedRow && colIdx == m.focusedCol {
 		return m.styles.SelectedCell
+	}
+
+	// Search match (not active)
+	if isSearchMatch {
+		return m.styles.SearchMatch
 	}
 
 	// Cell is in the focused row
@@ -177,6 +222,20 @@ func (m Model) getCellStyle(rowIdx, colIdx int) lipgloss.Style {
 
 	// Default cell style
 	return m.styles.Cell
+}
+
+// isSearchMatch checks if a cell is a search match and if it's the active match.
+func (m Model) isSearchMatch(rowIdx, colIdx int) (isMatch, isActive bool) {
+	if len(m.searchMatches) == 0 {
+		return false, false
+	}
+
+	for i, match := range m.searchMatches {
+		if match.Row == rowIdx && match.Col == colIdx {
+			return true, i == m.searchMatchIndex
+		}
+	}
+	return false, false
 }
 
 // truncateOrPad truncates or pads a string to the specified width.
