@@ -106,6 +106,7 @@ func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, d
 		log.Printf("SQL command executed, retrieved %d rows\n", len(results))
 
 		if rows.Err() != nil {
+			log.Printf("Row iteration error: %s", rows.Err().Error())
 			return notifications.ShowError("Row iteration error: " + rows.Err().Error())
 		}
 		return sharedcomponents.SQLResultMsg{

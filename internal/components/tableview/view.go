@@ -31,10 +31,6 @@ func (m TableViewModel) View() tea.View {
 }
 
 func renderScrollIndicators(t table.Model, m TableViewModel) string {
-	if len(t.Rows()) == 0 {
-		return ""
-	}
-
 	var indicators []string
 
 	// Table type indicator

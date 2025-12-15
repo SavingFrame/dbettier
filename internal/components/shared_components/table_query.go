@@ -69,7 +69,7 @@ func (q *TableQuery) SetSQLResult(msg *SQLResultMsg) *SQLResult {
 	q.SQLResult = &SQLResult{
 		Rows:          msg.Rows,
 		Columns:       msg.Columns,
-		TotalFetched:  len(msg.Rows),
+		TotalFetched:  len(msg.Rows) + q.Offset,
 		CanFetchTotal: canFetchTotal,
 	}
 	return q.SQLResult
@@ -120,7 +120,7 @@ func (q *TableQuery) Rows() [][]any {
 		log.Printf("Returning rows for current page: limit=%d", q.Limit)
 		return q.SQLResult.Rows[:q.Limit-1]
 	}
-	return nil
+	return q.SQLResult.Rows
 }
 
 func (q *TableQuery) PageOffset() int {
