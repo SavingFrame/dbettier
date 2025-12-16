@@ -91,10 +91,10 @@ func (m DBTreeModel) renderDatabase(t *tree.Tree, dbIdx int, db *databaseNode) {
 	}
 
 	dbText := fmt.Sprintf("%s%s  %s@%s", expandIndicator, mark, db.name, db.host)
-	dbText = m.truncateText(dbText, m.windowWidth-4)
+	dbText = m.truncateText(dbText, m.viewport.Width()-4)
 
-	isFocused := m.cursor.dbIndex() == dbIdx && m.cursor.isAtDatabaseLevel()
-	isSearchMatch, isActiveMatch := m.isSearchMatch([]int{dbIdx})
+	isFocused := m.cursor.DbIndex() == dbIdx && m.cursor.isAtDatabaseLevel()
+	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx})
 
 	// Define children renderer or nil
 	var childrenFn func(*tree.Tree)
@@ -121,9 +121,9 @@ func (m DBTreeModel) renderSchema(t *tree.Tree, dbIdx, schemaIdx int, schema *da
 	}
 
 	schemaText := fmt.Sprintf("%s 󰑒 %s", expandIndicator, schema.name)
-	schemaText = m.truncateText(schemaText, m.windowWidth-12)
-	isFocused := m.cursor.dbIndex() == dbIdx && m.cursor.schemaIndex() == schemaIdx && m.cursor.atLevel(SchemaLevel)
-	isSearchMatch, isActiveMatch := m.isSearchMatch([]int{dbIdx, schemaIdx})
+	schemaText = m.truncateText(schemaText, m.viewport.Width()-12)
+	isFocused := m.cursor.DbIndex() == dbIdx && m.cursor.SchemaIndex() == schemaIdx && m.cursor.AtLevel(SchemaLevel)
+	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx, schemaIdx})
 
 	var childrenFn func(*tree.Tree)
 	if schema.expanded && len(schema.tables) > 0 {
@@ -140,12 +140,12 @@ func (m DBTreeModel) renderSchema(t *tree.Tree, dbIdx, schemaIdx int, schema *da
 // renderTable adds a table node and recursively its columns
 func (m DBTreeModel) renderTable(t *tree.Tree, dbIdx, schemaIdx, tableIdx int, table *schemaTableNode) {
 	tableText := fmt.Sprintf(" %s", table.name)
-	tableText = m.truncateText(tableText, m.windowWidth-14)
-	isFocused := m.cursor.dbIndex() == dbIdx &&
-		m.cursor.schemaIndex() == schemaIdx &&
-		m.cursor.tableIndex() == tableIdx &&
-		m.cursor.atLevel(TableLevel)
-	isSearchMatch, isActiveMatch := m.isSearchMatch([]int{dbIdx, schemaIdx, tableIdx})
+	tableText = m.truncateText(tableText, m.viewport.Width()-14)
+	isFocused := m.cursor.DbIndex() == dbIdx &&
+		m.cursor.SchemaIndex() == schemaIdx &&
+		m.cursor.TableIndex() == tableIdx &&
+		m.cursor.AtLevel(TableLevel)
+	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx, schemaIdx, tableIdx})
 
 	var childrenFn func(*tree.Tree)
 	if table.expanded && len(table.columns) > 0 {
@@ -162,12 +162,12 @@ func (m DBTreeModel) renderTable(t *tree.Tree, dbIdx, schemaIdx, tableIdx int, t
 // renderColumn adds a column node (leaf node)
 func (m DBTreeModel) renderColumn(t *tree.Tree, dbIdx, schemaIdx, tableIdx, colIdx int, column *tableColumnNode) {
 	colText := fmt.Sprintf("󰠵 %s (%s)", column.name, column.dataType)
-	colText = m.truncateText(colText, m.windowWidth-18)
-	isFocused := m.cursor.dbIndex() == dbIdx &&
-		m.cursor.schemaIndex() == schemaIdx &&
-		m.cursor.tableIndex() == tableIdx &&
-		m.cursor.tableColumnIndex() == colIdx
-	isSearchMatch, isActiveMatch := m.isSearchMatch([]int{dbIdx, schemaIdx, tableIdx, colIdx})
+	colText = m.truncateText(colText, m.viewport.Width()-18)
+	isFocused := m.cursor.DbIndex() == dbIdx &&
+		m.cursor.SchemaIndex() == schemaIdx &&
+		m.cursor.TableIndex() == tableIdx &&
+		m.cursor.TableColumnIndex() == colIdx
+	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx, schemaIdx, tableIdx, colIdx})
 
 	m.renderNode(t, colText, isFocused, isSearchMatch, isActiveMatch, nil)
 }
@@ -181,7 +181,7 @@ func (m DBTreeModel) RenderContent() string {
 		RootStyle(rootStyle)
 
 	// Render all databases
-	for dbIdx, db := range m.databases {
+	for dbIdx, db := range m.tree.databases {
 		m.renderDatabase(t, dbIdx, db)
 	}
 
@@ -191,19 +191,19 @@ func (m DBTreeModel) RenderContent() string {
 	// I think we shouldn't calculate everything and then cut lines,
 	// but rather calculate only what fits in the window.
 	lines := strings.Split(fullContent, "\n")
-	if m.scrollOffset >= len(lines) {
-		m.scrollOffset = max(0, len(lines)-m.windowHeight)
+	if m.viewport.ScrollOffset() >= len(lines) {
+		m.viewport.SetScrollOffset(max(0, len(lines)-m.viewport.Height()))
 	}
 
 	// Leave room for search bar if needed
-	availableHeight := m.windowHeight
-	if m.searchMode || len(m.searchMatches) > 0 {
+	availableHeight := m.viewport.Height()
+	if m.search.mode || len(m.search.matches) > 0 {
 		availableHeight-- // Reserve one line for search bar
 	}
 
 	if len(lines) > availableHeight {
-		end := min(m.scrollOffset+availableHeight, len(lines))
-		lines = lines[m.scrollOffset:end]
+		end := min(m.viewport.ScrollOffset()+availableHeight, len(lines))
+		lines = lines[m.viewport.ScrollOffset():end]
 	}
 
 	result := strings.Join(lines, "\n")
@@ -211,16 +211,16 @@ func (m DBTreeModel) RenderContent() string {
 	// Apply width constraint
 	resultLines := strings.Split(result, "\n")
 	for i, line := range resultLines {
-		if lipgloss.Width(line) > m.windowWidth {
+		if lipgloss.Width(line) > m.viewport.Width() {
 			// Truncate lines that are too long
-			resultLines[i] = line[:m.windowWidth]
+			resultLines[i] = line[:m.viewport.Width()]
 		}
 	}
 
 	content := strings.Join(resultLines, "\n")
 
 	// Add search bar if in search mode or has matches
-	if m.searchMode || len(m.searchMatches) > 0 {
+	if m.search.mode || len(m.search.matches) > 0 {
 		content += "\n" + m.renderSearchBar()
 	}
 
@@ -232,22 +232,22 @@ func (m DBTreeModel) renderSearchBar() string {
 	searchStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240"))
 
-	if m.searchMode {
+	if m.search.mode {
 		// Active search input
 		cursor := "_"
 		matchInfo := ""
-		if len(m.searchMatches) > 0 {
-			matchInfo = fmt.Sprintf(" [%d/%d]", m.searchMatchIndex+1, len(m.searchMatches))
-		} else if m.searchQuery != "" {
+		if len(m.search.matches) > 0 {
+			matchInfo = fmt.Sprintf(" [%d/%d]", m.search.matchIndex+1, len(m.search.matches))
+		} else if m.search.query != "" {
 			matchInfo = " [no matches]"
 		}
-		return searchStyle.Render(fmt.Sprintf("/%s%s%s", m.searchQuery, cursor, matchInfo))
+		return searchStyle.Render(fmt.Sprintf("/%s%s%s", m.search.query, cursor, matchInfo))
 	}
 
 	// Not in search mode but showing match count
-	if len(m.searchMatches) > 0 {
+	if len(m.search.matches) > 0 {
 		return searchStyle.Render(fmt.Sprintf("Search: %q [%d/%d] (n/N to navigate)",
-			m.searchQuery, m.searchMatchIndex+1, len(m.searchMatches)))
+			m.search.query, m.search.matchIndex+1, len(m.search.matches)))
 	}
 
 	return ""
