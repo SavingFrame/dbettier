@@ -93,7 +93,7 @@ func (m DBTreeModel) renderDatabase(t *tree.Tree, dbIdx int, db *databaseNode) {
 	dbText := fmt.Sprintf("%s%s  %s@%s", expandIndicator, mark, db.name, db.host)
 	dbText = m.truncateText(dbText, m.viewport.Width()-4)
 
-	isFocused := m.cursor.DbIndex() == dbIdx && m.cursor.isAtDatabaseLevel()
+	isFocused := m.tree.cursor.DbIndex() == dbIdx && m.tree.cursor.isAtDatabaseLevel()
 	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx})
 
 	// Define children renderer or nil
@@ -122,7 +122,7 @@ func (m DBTreeModel) renderSchema(t *tree.Tree, dbIdx, schemaIdx int, schema *da
 
 	schemaText := fmt.Sprintf("%s 󰑒 %s", expandIndicator, schema.name)
 	schemaText = m.truncateText(schemaText, m.viewport.Width()-12)
-	isFocused := m.cursor.DbIndex() == dbIdx && m.cursor.SchemaIndex() == schemaIdx && m.cursor.AtLevel(SchemaLevel)
+	isFocused := m.tree.cursor.DbIndex() == dbIdx && m.tree.cursor.SchemaIndex() == schemaIdx && m.tree.cursor.AtLevel(SchemaLevel)
 	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx, schemaIdx})
 
 	var childrenFn func(*tree.Tree)
@@ -141,10 +141,10 @@ func (m DBTreeModel) renderSchema(t *tree.Tree, dbIdx, schemaIdx int, schema *da
 func (m DBTreeModel) renderTable(t *tree.Tree, dbIdx, schemaIdx, tableIdx int, table *schemaTableNode) {
 	tableText := fmt.Sprintf(" %s", table.name)
 	tableText = m.truncateText(tableText, m.viewport.Width()-14)
-	isFocused := m.cursor.DbIndex() == dbIdx &&
-		m.cursor.SchemaIndex() == schemaIdx &&
-		m.cursor.TableIndex() == tableIdx &&
-		m.cursor.AtLevel(TableLevel)
+	isFocused := m.tree.cursor.DbIndex() == dbIdx &&
+		m.tree.cursor.SchemaIndex() == schemaIdx &&
+		m.tree.cursor.TableIndex() == tableIdx &&
+		m.tree.cursor.AtLevel(TableLevel)
 	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx, schemaIdx, tableIdx})
 
 	var childrenFn func(*tree.Tree)
@@ -163,10 +163,10 @@ func (m DBTreeModel) renderTable(t *tree.Tree, dbIdx, schemaIdx, tableIdx int, t
 func (m DBTreeModel) renderColumn(t *tree.Tree, dbIdx, schemaIdx, tableIdx, colIdx int, column *tableColumnNode) {
 	colText := fmt.Sprintf("󰠵 %s (%s)", column.name, column.dataType)
 	colText = m.truncateText(colText, m.viewport.Width()-18)
-	isFocused := m.cursor.DbIndex() == dbIdx &&
-		m.cursor.SchemaIndex() == schemaIdx &&
-		m.cursor.TableIndex() == tableIdx &&
-		m.cursor.TableColumnIndex() == colIdx
+	isFocused := m.tree.cursor.DbIndex() == dbIdx &&
+		m.tree.cursor.SchemaIndex() == schemaIdx &&
+		m.tree.cursor.TableIndex() == tableIdx &&
+		m.tree.cursor.TableColumnIndex() == colIdx
 	isSearchMatch, isActiveMatch := m.search.IsMatch([]int{dbIdx, schemaIdx, tableIdx, colIdx})
 
 	m.renderNode(t, colText, isFocused, isSearchMatch, isActiveMatch, nil)

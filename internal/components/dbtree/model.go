@@ -6,7 +6,6 @@ import (
 
 type DBTreeModel struct {
 	tree     TreeState
-	cursor   TreeCursor
 	search   TreeSearch
 	viewport Viewport
 	registry *database.DBRegistry
@@ -24,11 +23,10 @@ func DBTreeScreen(registry *database.DBRegistry) DBTreeModel {
 		})
 	}
 
-	cursor := TreeCursor{path: []int{0}}
+	cursor := &TreeCursor{path: []int{0}}
 
 	return DBTreeModel{
-		cursor:   cursor,
-		tree:     TreeState{databases: dbNodes, cursor: &cursor},
+		tree:     TreeState{databases: dbNodes, cursor: cursor},
 		search:   TreeSearch{matchIndex: -1},
 		registry: registry,
 		viewport: Viewport{},

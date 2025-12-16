@@ -18,11 +18,11 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case handleDBSelectionResult:
 		m.tree.SetSchemas(msg.schemas)
-		m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+		m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		return m, msg.notification
 	case handleSchemaSelectionResult:
 		m.tree.SetTables(msg.tables)
-		m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+		m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		return m, msg.cmd
 	case loadTablesColumnsResult:
 		err := m.tree.SetColumns(msg.databaseID, msg.schemaName, msg.columns)
@@ -34,55 +34,55 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// Handle search mode input
 		if m.search.IsActive() {
-			m.search.HandleInput(msg, &m.tree, &m.cursor)
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.search.HandleInput(msg, &m.tree, m.tree.cursor)
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 			return m, nil
 		}
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Up):
-			m.cursor.MoveUp(&m.tree)
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.tree.cursor.MoveUp(&m.tree)
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		case key.Matches(msg, DefaultKeyMap.Down):
-			m.cursor.MoveDown(&m.tree)
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.tree.cursor.MoveDown(&m.tree)
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 
 		case key.Matches(msg, DefaultKeyMap.Left):
 			m.tree.Collapse()
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		case key.Matches(msg, DefaultKeyMap.Right):
 			cmd = m.tree.Expand(m.registry)
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		case key.Matches(msg, DefaultKeyMap.Space):
 			cmd = m.tree.Toggle(m.registry)
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		case key.Matches(msg, DefaultKeyMap.Enter):
-			if m.cursor.Level() != TableLevel {
+			if m.tree.cursor.Level() != TableLevel {
 				cmd = m.tree.Toggle(m.registry)
-				m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+				m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 			} else {
 				cmd = handleOpenTable(m.tree.CurrentDatabase(), m.tree.CurrentTable())
 			}
 		case key.Matches(msg, DefaultKeyMap.ScrollDown):
 			for i := 0; i < m.viewport.Height()/2; i++ {
-				m.cursor.MoveDown(&m.tree)
+				m.tree.cursor.MoveDown(&m.tree)
 			}
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		case key.Matches(msg, DefaultKeyMap.ScrollUp):
 			for i := 0; i < m.viewport.Height()/2; i++ {
-				m.cursor.MoveUp(&m.tree)
+				m.tree.cursor.MoveUp(&m.tree)
 			}
-			m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+			m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		case key.Matches(msg, DefaultKeyMap.Search):
 			m.search.Enable()
 		case key.Matches(msg, DefaultKeyMap.SearchNextMatch):
 			if len(m.search.Matches()) > 0 {
-				m.search.NextMatch(&m.cursor)
-				m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+				m.search.NextMatch(m.tree.cursor)
+				m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 			}
 		case key.Matches(msg, DefaultKeyMap.SearchPrevMatch):
 			if len(m.search.Matches()) > 0 {
-				m.search.PrevMatch(&m.cursor)
-				m.viewport.AdjustScrollToCursor(m.cursor.VisualLine(&m.tree))
+				m.search.PrevMatch(m.tree.cursor)
+				m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 			}
 
 		case key.Matches(msg, DefaultKeyMap.Quit):
