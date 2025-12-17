@@ -18,6 +18,16 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.spinner, cmd = m.spinner.Update(msg)
 	cmds = append(cmds, cmd)
 
+	// update status bar text input
+	if m.statusBar.focus == StatusBarFocusFilter {
+		cmd, earlyExit := m.handleFilterInput(msg)
+		log.Printf("Filter input handled, earlyExit=%v\n", earlyExit)
+		cmds = append(cmds, cmd)
+		if earlyExit {
+			return m, tea.Batch(cmds...)
+		}
+	}
+
 	// always update upstream table model
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
@@ -46,11 +56,11 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Button != tea.MouseLeft {
 			return m, nil
 		}
-		log.Printf("MouseReleaseMsg at (%d, %d)\n", msg.X, msg.Y)
 		if zone.Get("refresh").InBounds(msg) {
-			log.Println("Refresh button clicked")
 			cmd = m.data.RefreshQuery()
 			cmds = append(cmds, cmd)
+		} else if zone.Get("filterInput").InBounds(msg) {
+			m.statusBar.SetFocus(StatusBarFocusFilter)
 		}
 	case tea.KeyMsg:
 		switch {
@@ -105,12 +115,8 @@ func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {
 	orderByClauses := m.data.HandleSortChange(m.table.Columns(), msg.SortOrders)
 	switch tq := m.data.Query().(type) {
 	case *sharedcomponents.TableQuery:
-		tq.HandleSortChange(orderByClauses)
-		return func() tea.Msg {
-			return sharedcomponents.ReapplyTableQueryMsg{
-				Query: tq,
-			}
-		}
+		cmd := tq.HandleSortChange(orderByClauses)
+		return cmd
 	}
 	return nil
 }
@@ -147,4 +153,31 @@ func (m *TableViewModel) handlePrevPage() tea.Cmd {
 	// First press - request confirmation
 	m.statusBar.Pagination().RequestPrevPage()
 	return nil
+}
+
+// handleFilterInput processes input when the filter input is focused
+// returns a command and a boolean indicating if we need to execute early exit in the update method
+func (m *TableViewModel) handleFilterInput(msg tea.Msg) (tea.Cmd, bool) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+	m.statusBar.filterInput, cmd = m.statusBar.FilterInput().Update(msg)
+	cmds = append(cmds, cmd)
+
+	if msg, ok := msg.(tea.KeyMsg); ok {
+		if key.Matches(msg, DefaultKeyMap.Enter) {
+			v := m.statusBar.FilterInput().Value()
+			if tq, ok := m.data.Query().(*sharedcomponents.TableQuery); ok {
+				tableUpdateCmd := tq.SetWhereClause(v)
+				cmds = append(cmds, tableUpdateCmd)
+				return tea.Batch(cmds...), false
+			}
+		} else if key.Matches(msg, DefaultKeyMap.Escape) {
+			m.statusBar.SetFocus(StatusBarFocusNone)
+			return tea.Batch(cmds...), true
+		} else {
+			return tea.Batch(cmds...), true
+		}
+	}
+
+	return tea.Batch(cmds...), false
 }

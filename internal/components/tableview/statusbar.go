@@ -246,12 +246,12 @@ func (s *StatusBar) renderControls() string {
 
 	// Filter input
 	filterLabel := sbInputLabelStyle.Render(" Filter ")
-	filterInput := sbInputStyle.Render(s.filterInput.View())
+	filterInput := zone.Mark("filterInput", sbInputStyle.Render(s.filterInput.View()))
 	parts = append(parts, filterLabel+filterInput)
 
 	// Order input
 	orderLabel := sbInputLabelStyle.Render(" Order ")
-	orderInput := sbInputStyle.Render(s.orderingInput.View())
+	orderInput := zone.Mark("orderingInput", sbInputStyle.Render(s.orderingInput.View()))
 	parts = append(parts, orderLabel+orderInput)
 
 	// Buttons

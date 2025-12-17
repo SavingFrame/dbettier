@@ -8,6 +8,7 @@ type KeyMap struct {
 	Quit         key.Binding
 	NextPage     key.Binding
 	PreviousPage key.Binding
+	Escape       key.Binding
 }
 
 // DefaultKeyMap returns the default keybindings for the table view
@@ -27,6 +28,10 @@ var DefaultKeyMap = KeyMap{
 	PreviousPage: key.NewBinding(
 		key.WithKeys("g"),
 		key.WithHelp("g", "top/prev page"),
+	),
+	Escape: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "clear"),
 	),
 }
 

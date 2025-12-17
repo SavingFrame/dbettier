@@ -30,9 +30,9 @@ func (q *BasicSQLQuery) Compile() string {
 	return q.Query
 }
 
-func (q *BasicSQLQuery) HandleSortChange(orderBy []OrderByClause) QueryCompiler {
+func (q *BasicSQLQuery) HandleSortChange(orderBy []OrderByClause) tea.Cmd {
 	q.SortOrders = orderBy
-	return q
+	return nil
 }
 
 func (q *BasicSQLQuery) GetSortOrders() []OrderByClause {

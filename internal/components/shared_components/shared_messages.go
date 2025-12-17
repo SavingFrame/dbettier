@@ -9,7 +9,7 @@ import (
 
 type QueryCompiler interface {
 	Compile() string
-	HandleSortChange(orderBy []OrderByClause) QueryCompiler
+	HandleSortChange(orderBy []OrderByClause) tea.Cmd
 	GetSortOrders() []OrderByClause
 	SetSQLResult(*SQLResultMsg) *SQLResult
 	GetSQLResult() *SQLResult

@@ -9,11 +9,12 @@ import (
 )
 
 type TableQuery struct {
-	BaseQuery  string
-	Limit      int
-	SortOrders []OrderByClause
-	Offset     int
-	SQLResult  *SQLResult
+	BaseQuery   string
+	Limit       int
+	SortOrders  []OrderByClause
+	Offset      int
+	SQLResult   *SQLResult
+	WhereClause string
 }
 
 func NewTableQuery(baseQuery string, limit int) *TableQuery {
@@ -34,6 +35,9 @@ func (q *TableQuery) Compile() string {
 	if fullQuery[len(fullQuery)-1] == ';' {
 		fullQuery = fullQuery[:len(fullQuery)-1]
 	}
+	if q.WhereClause != "" {
+		fullQuery += " WHERE " + q.WhereClause
+	}
 	if len(q.SortOrders) > 0 {
 
 		var orderByParts []string
@@ -52,12 +56,6 @@ func (q *TableQuery) Compile() string {
 		fullQuery = fmt.Sprintf("%s OFFSET %d", fullQuery, q.Offset)
 	}
 	return fullQuery
-}
-
-func (q *TableQuery) HandleSortChange(orderBy []OrderByClause) QueryCompiler {
-	log.Printf("Handling sort change: %+v", orderBy)
-	q.SortOrders = orderBy
-	return q
 }
 
 func (q *TableQuery) GetSortOrders() []OrderByClause {
@@ -125,4 +123,23 @@ func (q *TableQuery) Rows() [][]any {
 
 func (q *TableQuery) PageOffset() int {
 	return q.Offset
+}
+
+func (q *TableQuery) SetWhereClause(whereClause string) tea.Cmd {
+	q.WhereClause = whereClause
+	return func() tea.Msg {
+		return ReapplyTableQueryMsg{
+			Query: q,
+		}
+	}
+}
+
+func (q *TableQuery) HandleSortChange(orderBy []OrderByClause) tea.Cmd {
+	log.Printf("Handling sort change: %+v", orderBy)
+	q.SortOrders = orderBy
+	return func() tea.Msg {
+		return ReapplyTableQueryMsg{
+			Query: q,
+		}
+	}
 }
