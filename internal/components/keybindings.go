@@ -11,6 +11,7 @@ type GlobalKeyMap struct {
 	FocusPrev key.Binding
 	Help      key.Binding
 	Quit      key.Binding
+	Escape    key.Binding
 }
 
 // DefaultGlobalKeyMap returns the default global keybindings
@@ -34,6 +35,10 @@ var DefaultGlobalKeyMap = GlobalKeyMap{
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c"),
 		key.WithHelp("ctrl+c", "quit"),
+	),
+	Escape: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "clear / back"),
 	),
 }
 

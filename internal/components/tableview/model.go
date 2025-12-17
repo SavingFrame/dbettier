@@ -6,10 +6,10 @@ import (
 )
 
 type TableViewModel struct {
-	viewport   Viewport
-	pagination Pagination
-	data       DataState
-	table      table.Model
+	viewport  Viewport
+	statusBar StatusBar
+	data      DataState
+	table     table.Model
 }
 
 func TableViewScreen() TableViewModel {
@@ -21,10 +21,10 @@ func TableViewScreen() TableViewModel {
 	)
 
 	return TableViewModel{
-		viewport:   Viewport{},
-		pagination: Pagination{},
-		data:       DataState{},
-		table:      t,
+		viewport:  Viewport{},
+		statusBar: NewStatusBar(),
+		data:      DataState{},
+		table:     t,
 	}
 }
 
@@ -37,6 +37,9 @@ func (m *TableViewModel) SetSize(width, height int) {
 
 	// Update table width for horizontal scrolling
 	m.table.SetWidth(width)
+
+	// Update status bar width for right-aligned content
+	m.statusBar.SetWidth(width)
 
 	// Update table height (leave some room for borders/padding and scroll indicators)
 	if height > 4 {

@@ -35,10 +35,10 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Enter):
-			m.pagination.Clear()
+			m.statusBar.Pagination().Clear()
 		case key.Matches(msg, DefaultKeyMap.Quit):
-			if m.pagination.HasPendingConfirm() {
-				m.pagination.Clear()
+			if m.statusBar.Pagination().HasPendingConfirm() {
+				m.statusBar.Pagination().Clear()
 			} else {
 				cmds = append(cmds, tea.Quit)
 			}
@@ -49,10 +49,31 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = m.handlePrevPage()
 			cmds = append(cmds, cmd)
 		default:
-			m.pagination.Clear()
+			m.statusBar.Pagination().Clear()
 		}
 	}
+
+	// Sync status bar state before returning
+	m.syncStatusBar()
+
 	return m, tea.Batch(cmds...)
+}
+
+func (m *TableViewModel) syncStatusBar() {
+	focusedRow, focusedCol := m.table.FocusedPosition()
+	totalRows := len(m.table.Rows())
+	totalCols := len(m.table.Columns())
+
+	m.statusBar.SyncState(
+		focusedRow,
+		totalRows,
+		m.data.PageOffset(),
+		m.data.CanFetchTotal(),
+		focusedCol,
+		totalCols,
+		m.data.IsTableQuery(),
+		m.data.GetSortOrders(),
+	)
 }
 
 func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {
@@ -78,15 +99,15 @@ func (m *TableViewModel) handleNextPage() tea.Cmd {
 	m.table.ScrollToBottom()
 
 	if !m.table.IsLatestRowFocused() || !m.data.HasNextPage() {
-		m.pagination.Clear()
+		m.statusBar.Pagination().Clear()
 		return nil
 	}
 
-	if m.pagination.ConfirmNextPage() {
+	if m.statusBar.Pagination().ConfirmNextPage() {
 		return m.data.Query().NextPage()
 	}
 
-	m.pagination.RequestNextPage()
+	m.statusBar.Pagination().RequestNextPage()
 	return nil
 }
 
@@ -94,16 +115,16 @@ func (m *TableViewModel) handlePrevPage() tea.Cmd {
 	m.table.ScrollToTop()
 
 	if !m.table.IsFirstRowFocused() || !m.data.HasPreviousPage() {
-		m.pagination.Clear()
+		m.statusBar.Pagination().Clear()
 		return nil
 	}
 
 	// Check if this is confirmation press
-	if m.pagination.ConfirmPrevPage() {
+	if m.statusBar.Pagination().ConfirmPrevPage() {
 		return m.data.Query().PreviousPage()
 	}
 
 	// First press - request confirmation
-	m.pagination.RequestPrevPage()
+	m.statusBar.Pagination().RequestPrevPage()
 	return nil
 }

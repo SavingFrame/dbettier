@@ -162,6 +162,9 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.sqlCommandBar.Blur()
 			}
 			return m, nil
+		case key.Matches(msg, m.keys.Escape) && m.help.ShowAll:
+			m.help.ShowAll = false
+			return m, nil
 		}
 	default:
 		routedCmds := m.routeToComponents(msg)
