@@ -137,6 +137,7 @@ func (c *TreeCursor) MoveDown(tree *TreeState) {
 			// Move to next sibling at this level
 			c.path = c.path[:level]
 			c.path[level-1]++
+			return
 		}
 	}
 }

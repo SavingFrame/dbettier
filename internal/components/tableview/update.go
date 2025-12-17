@@ -44,8 +44,10 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case key.Matches(msg, DefaultKeyMap.NextPage):
 			cmd = m.handleNextPage()
+			cmds = append(cmds, cmd)
 		case key.Matches(msg, DefaultKeyMap.PreviousPage):
 			cmd = m.handlePrevPage()
+			cmds = append(cmds, cmd)
 		default:
 			m.pagination.Clear()
 		}
