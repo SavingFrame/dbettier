@@ -5,16 +5,15 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-var (
-	placeholderStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
-		Italic(true)
-)
+var placeholderStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("240")).
+	Italic(true)
 
 // View implements tea.Model interface
 func (m TableViewModel) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
 	v.SetContent(m.RenderContent())
 	return v
 }

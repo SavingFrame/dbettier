@@ -3,6 +3,7 @@ package tableview
 import (
 	"fmt"
 
+	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -144,6 +145,14 @@ func (d *DataState) HandleSortChange(columns []table.Column, sortOrders []table.
 	}
 
 	return orderByClauses
+}
+
+func (d *DataState) RefreshQuery() tea.Cmd {
+	return func() tea.Msg {
+		return sharedcomponents.ReapplyTableQueryMsg{
+			Query: d.query,
+		}
+	}
 }
 
 // IsTableQuery returns true if the current query is a TableQuery (vs BasicQuery)

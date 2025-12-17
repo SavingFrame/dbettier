@@ -7,6 +7,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	zone "github.com/lrstanley/bubblezone/v2"
 )
 
 // StatusBarFocus represents which element of the status bar is focused
@@ -254,8 +255,8 @@ func (s *StatusBar) renderControls() string {
 	parts = append(parts, orderLabel+orderInput)
 
 	// Buttons
-	refreshBtn := sbButtonPrimaryStyle.Render("↻ Refresh")
-	countBtn := sbButtonStyle.Render("# Count")
+	refreshBtn := zone.Mark("refresh", sbButtonPrimaryStyle.Render("↻ Refresh"))
+	countBtn := zone.Mark("count", sbButtonStyle.Render("# Count"))
 
 	parts = append(parts, refreshBtn)
 	parts = append(parts, countBtn)

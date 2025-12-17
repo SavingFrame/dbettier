@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/pkgs/table"
+	zone "github.com/lrstanley/bubblezone/v2"
 )
 
 func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -32,6 +33,16 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.table.SetRows(rows)
 	case table.SortChangeMsg:
 		cmds = append(cmds, m.handleSortChange(msg))
+	case tea.MouseReleaseMsg:
+		if msg.Button != tea.MouseLeft {
+			return m, nil
+		}
+		log.Printf("MouseReleaseMsg at (%d, %d)\n", msg.X, msg.Y)
+		if zone.Get("refresh").InBounds(msg) {
+			log.Println("Refresh button clicked")
+			cmd = m.data.RefreshQuery()
+			cmds = append(cmds, cmd)
+		}
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Enter):

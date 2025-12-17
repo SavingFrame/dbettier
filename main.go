@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/SavingFrame/dbettier/internal/components"
 	"github.com/SavingFrame/dbettier/internal/database"
+	zone "github.com/lrstanley/bubblezone/v2"
 )
 
 // setupDebugLog initializes debug logging if DEBUG env var is set.
@@ -26,6 +27,7 @@ func setupDebugLog() func() {
 func main() {
 	cleanup := setupDebugLog()
 	defer cleanup()
+	zone.NewGlobal()
 
 	// Create database registry and load connections
 	registry := database.NewDBRegistry()

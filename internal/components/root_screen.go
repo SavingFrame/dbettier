@@ -14,6 +14,7 @@ import (
 	sqlcommandbar "github.com/SavingFrame/dbettier/internal/components/sql_commandbar"
 	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
+	zone "github.com/lrstanley/bubblezone/v2"
 )
 
 type FocusedPane int
@@ -233,6 +234,7 @@ func (m *rootScreenModel) routeToComponents(msg tea.Msg) []tea.Cmd {
 func (m rootScreenModel) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
 
 	baseView := m.renderSplitLayout()
 
@@ -246,7 +248,7 @@ func (m rootScreenModel) View() tea.View {
 	}
 
 	if m.notification == nil {
-		v.SetContent(fullView)
+		v.SetContent(zone.Scan(fullView))
 		return v
 	}
 
@@ -261,11 +263,11 @@ func (m rootScreenModel) View() tea.View {
 			lipgloss.NewLayer(fullView),
 			lipgloss.NewLayer(notifView).X(m.width-notifWidth).Y(0),
 		)
-		v.SetContent(canvas.Render())
+		v.SetContent(zone.Scan(canvas.Render()))
 		return v
 	}
 
-	v.SetContent(notifView + "\n" + fullView)
+	v.SetContent(zone.Scan(notifView + "\n" + fullView))
 	return v
 }
 
