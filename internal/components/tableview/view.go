@@ -6,21 +6,20 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
-	"github.com/SavingFrame/dbettier/pkgs/table"
 )
 
-var placeholderStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("240")).
-	Italic(true)
+var (
+	placeholderStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("240")).
+				Italic(true)
 
-// RenderContent returns the string representation of the view for composition
-func (m TableViewModel) RenderContent() string {
-	if m.width == 0 || m.height == 0 {
-		return placeholderStyle.Render("Table view (empty)")
-	}
-	return m.table.View() + "\n" + renderScrollIndicators(m.table, m)
-}
+	indicatorStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("240"))
+
+	messageStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("208")).
+			Bold(true)
+)
 
 // View implements tea.Model interface
 func (m TableViewModel) View() tea.View {
@@ -30,60 +29,56 @@ func (m TableViewModel) View() tea.View {
 	return v
 }
 
-func renderScrollIndicators(t table.Model, m TableViewModel) string {
+// RenderContent returns the string representation of the view for composition
+func (m TableViewModel) RenderContent() string {
+	if !m.viewport.IsReady() {
+		return placeholderStyle.Render("Table view (empty)")
+	}
+	return m.table.View() + "\n" + m.renderStatusBar()
+}
+
+func (m TableViewModel) renderStatusBar() string {
 	var indicators []string
 
 	// Table type indicator
 	// if m.query.(type) == nil {
-	if _, ok := m.query.(*sharedcomponents.TableQuery); ok {
+	if m.data.IsTableQuery() {
 		indicators = append(indicators, " ")
 	} else {
 		indicators = append(indicators, " ")
 	}
 
-	focusedRow, focusedCol := t.FocusedPosition()
 	// Vertical scroll indicator
-	if t.GetHeight() > 2 {
-		totalRows := len(t.Rows())
+	if m.table.GetHeight() > 2 {
+		focusedRow, _ := m.table.FocusedPosition()
+		totalRows := len(m.table.Rows())
+		pageOffset := m.data.PageOffset()
 
-		var pageOffset int
-		if m.query != nil {
-			pageOffset = m.query.PageOffset()
-		}
 		currentPos := focusedRow + 1 + pageOffset
-		totalRowsString := formatNumber(totalRows + pageOffset)
-		if m.canFetchTotal {
-			totalRowsString += "+"
+		totalRowsStr := fmt.Sprintf("%d", totalRows+pageOffset)
+		if m.data.CanFetchTotal() {
+			totalRowsStr += "+"
 		}
-		indicator := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240")).
-			Render("Row " + formatNumber(currentPos) + "/" + totalRowsString)
-		indicators = append(indicators, indicator)
+		indicators = append(indicators,
+			indicatorStyle.Render(fmt.Sprintf("Row %d/%s", currentPos, totalRowsStr)))
 	}
 
 	// Horizontal scroll indicator
-	if len(t.Columns()) > 0 {
-		currentCol := focusedCol + 1
-		totalCols := len(t.Columns())
+	if cols := m.table.Columns(); len(cols) > 1 {
 
-		if totalCols > 1 {
-			indicator := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("240")).
-				Render("Col " + formatNumber(currentCol) + "/" + formatNumber(totalCols))
-			indicators = append(indicators, indicator)
-		}
+		_, focusedCol := m.table.FocusedPosition()
+		indicators = append(indicators,
+			indicatorStyle.Render(fmt.Sprintf("Col %d/%d", focusedCol+1, len(cols))))
 	}
 
 	// Ordering indicator
-	if len(t.OrderColumns()) > 0 {
+	if orders := m.data.GetSortOrders(); len(orders) > 0 {
 		var orderIndicators []string
-		for _, orderCol := range m.query.GetSortOrders() {
+		for _, orderCol := range orders {
 			orderIndicators = append(orderIndicators, fmt.Sprintf("%s %s", orderCol.ColumnName, orderCol.Direction))
 		}
-		indicator := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240")).
-			Render("Order: " + strings.Join(orderIndicators, ", "))
-		indicators = append(indicators, indicator)
+		indicators = append(indicators,
+			indicatorStyle.Render("Order: "+strings.Join(orderIndicators, ", ")))
 
 	}
 
@@ -91,21 +86,14 @@ func renderScrollIndicators(t table.Model, m TableViewModel) string {
 		return ""
 	}
 
-	leftSection := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
-		Render(strings.Join(indicators, " | "))
+	statusBar := indicatorStyle.Render(strings.Join(indicators, " | "))
 
-	// If there's a custom message, display it in the center
-	if m.customMessage != "" {
-		centerSection := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("208")).
-			Bold(true).
-			Render(m.customMessage)
-
-		return leftSection + "  " + centerSection
+	// Add pagination message if present
+	if msg := m.pagination.Message(); msg != "" {
+		statusBar += "  " + messageStyle.Render(msg)
 	}
 
-	return leftSection
+	return statusBar
 }
 
 // formatNumber formats a number as a string.
