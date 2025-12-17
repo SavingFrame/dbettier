@@ -14,18 +14,27 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
+	// always update spinner
+	m.spinner, cmd = m.spinner.Update(msg)
+	cmds = append(cmds, cmd)
+
 	// always update upstream table model
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
 
 	switch msg := msg.(type) {
+	case sharedcomponents.TableLoadingMsg:
+		m.isLoading = true
+		return m, tea.Batch(cmds...)
 	case sharedcomponents.SQLResultMsg:
+		m.isLoading = false
 		result := m.data.SetFromSQLResult(msg)
 		columns, rows := m.data.BuildTableData(result)
 		m.table.SetRows(nil) // TODO: WHY?
 		m.table.SetColumns(columns)
 		m.table.SetRows(rows)
 	case sharedcomponents.UpdateTableMsg:
+		m.isLoading = false
 		m.data.SetQuery(msg.Query)
 		columns, rows := m.data.BuildTableData(msg.Query.GetSQLResult())
 		m.table.SetRows(nil) // TODO: WHY?

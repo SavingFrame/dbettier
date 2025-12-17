@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -54,12 +55,21 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textarea.SetValue(msg.Query)
 		m.databaseID = msg.DatabaseID
 		q := sharedcomponents.NewBasicSQLQuery(msg.Query)
-		return m, executeSQLQuery(m.registry, q, msg.DatabaseID)
+		return m, tea.Batch(
+			func() tea.Msg { return sharedcomponents.TableLoadingMsg{} },
+			executeSQLQuery(m.registry, q, msg.DatabaseID),
+		)
 	case sharedcomponents.ReapplyTableQueryMsg:
-		return m, executeSQLQuery(m.registry, msg.Query, m.databaseID)
+		return m, tea.Batch(
+			func() tea.Msg { return sharedcomponents.TableLoadingMsg{} },
+			executeSQLQuery(m.registry, msg.Query, m.databaseID),
+		)
 	case sharedcomponents.OpenTableMsg:
 		m.databaseID = msg.DatabaseID
-		return m, openTableHandler(m.registry, msg.Table, msg.DatabaseID)
+		return m, tea.Batch(
+			func() tea.Msg { return sharedcomponents.TableLoadingMsg{} },
+			openTableHandler(m.registry, msg.Table, msg.DatabaseID),
+		)
 	case sharedcomponents.SQLResultMsg:
 		m.textarea.SetValue(msg.Query.Compile())
 		m.query = msg.Query

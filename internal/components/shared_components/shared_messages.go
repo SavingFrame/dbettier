@@ -51,6 +51,9 @@ type OrderByClause struct {
 	Direction  string // "ASC" or "DESC"
 }
 
+// TableLoadingMsg signals that table data is being loaded
+type TableLoadingMsg struct{}
+
 type ComponentTarget int
 
 const (
@@ -65,6 +68,7 @@ var MessageRoutes = map[string]ComponentTarget{
 	"sharedcomponents.OrderByChangeMsg":     TargetSQLCommandBar,
 	"sharedcomponents.OpenTableMsg":         TargetSQLCommandBar,
 	"sharedcomponents.ReapplyTableQueryMsg": TargetSQLCommandBar,
+	"sharedcomponents.TableLoadingMsg":      TargetTableView,
 }
 
 func GetMessageType(msg tea.Msg) string {

@@ -1,6 +1,8 @@
 package tableview
 
 import (
+	"fmt"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -20,6 +22,9 @@ func (m TableViewModel) View() tea.View {
 
 // RenderContent returns the string representation of the view for composition
 func (m TableViewModel) RenderContent() string {
+	if m.isLoading {
+		return fmt.Sprintf("\n\n   %s Fetching data...\n\n", m.spinner.View())
+	}
 	if !m.viewport.IsReady() {
 		return placeholderStyle.Render("Table view (empty)")
 	}

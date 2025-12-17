@@ -1,7 +1,9 @@
 package tableview
 
 import (
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 )
 
@@ -10,6 +12,8 @@ type TableViewModel struct {
 	statusBar StatusBar
 	data      DataState
 	table     table.Model
+	spinner   spinner.Model
+	isLoading bool
 }
 
 func TableViewScreen() TableViewModel {
@@ -20,16 +24,22 @@ func TableViewScreen() TableViewModel {
 		table.WithHeight(20),
 	)
 
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+
 	return TableViewModel{
 		viewport:  Viewport{},
 		statusBar: NewStatusBar(),
 		data:      DataState{},
 		table:     t,
+		spinner:   s,
+		isLoading: false,
 	}
 }
 
 func (m TableViewModel) Init() tea.Cmd {
-	return nil
+	return m.spinner.Tick
 }
 
 func (m *TableViewModel) SetSize(width, height int) {
