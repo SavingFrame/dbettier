@@ -3,7 +3,6 @@ package sharedcomponents
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -11,7 +10,7 @@ import (
 type TableQuery struct {
 	BaseQuery   string
 	Limit       int
-	SortOrders  []OrderByClause
+	SortOrders  OrderByClauses
 	Offset      int
 	SQLResult   *SQLResult
 	WhereClause string
@@ -40,13 +39,7 @@ func (q *TableQuery) Compile() string {
 	}
 	if len(q.SortOrders) > 0 {
 
-		var orderByParts []string
-		for _, sort := range q.SortOrders {
-			quotedColumn := "\"" + sort.ColumnName + "\""
-			orderByParts = append(orderByParts, quotedColumn+" "+sort.Direction)
-		}
-
-		orderByClause := " ORDER BY " + strings.Join(orderByParts, ", ")
+		orderByClause := " ORDER BY " + q.SortOrders.String()
 		fullQuery = fullQuery + orderByClause
 	}
 	if q.Limit > 0 {
@@ -58,7 +51,7 @@ func (q *TableQuery) Compile() string {
 	return fullQuery
 }
 
-func (q *TableQuery) GetSortOrders() []OrderByClause {
+func (q *TableQuery) GetSortOrders() OrderByClauses {
 	return q.SortOrders
 }
 
@@ -134,7 +127,7 @@ func (q *TableQuery) SetWhereClause(whereClause string) tea.Cmd {
 	}
 }
 
-func (q *TableQuery) HandleSortChange(orderBy []OrderByClause) tea.Cmd {
+func (q *TableQuery) HandleSortChange(orderBy OrderByClauses) tea.Cmd {
 	log.Printf("Handling sort change: %+v", orderBy)
 	q.SortOrders = orderBy
 	return func() tea.Msg {

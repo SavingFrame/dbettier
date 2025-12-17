@@ -2,6 +2,7 @@ package sharedcomponents
 
 import (
 	"fmt"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/SavingFrame/dbettier/internal/database"
@@ -9,8 +10,8 @@ import (
 
 type QueryCompiler interface {
 	Compile() string
-	HandleSortChange(orderBy []OrderByClause) tea.Cmd
-	GetSortOrders() []OrderByClause
+	HandleSortChange(orderBy OrderByClauses) tea.Cmd
+	GetSortOrders() OrderByClauses
 	SetSQLResult(*SQLResultMsg) *SQLResult
 	GetSQLResult() *SQLResult
 	HasPreviousPage() bool
@@ -49,6 +50,15 @@ type SQLResultMsg struct {
 type OrderByClause struct {
 	ColumnName string
 	Direction  string // "ASC" or "DESC"
+}
+type OrderByClauses []OrderByClause
+
+func (o OrderByClauses) String() string {
+	strs := make([]string, len(o))
+	for i, clause := range o {
+		strs[i] = fmt.Sprintf("\"%s\" %s", clause.ColumnName, clause.Direction)
+	}
+	return strings.Join(strs, ", ")
 }
 
 // TableLoadingMsg signals that table data is being loaded

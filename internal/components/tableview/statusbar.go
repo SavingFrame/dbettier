@@ -31,7 +31,7 @@ type StatusBar struct {
 	focusedCol   int
 	totalCols    int
 	isTableQuery bool
-	sortOrders   []sharedcomponents.OrderByClause
+	sortOrders   sharedcomponents.OrderByClauses
 
 	// Input fields
 	filterInput   textinput.Model
@@ -144,7 +144,7 @@ func (s *StatusBar) SyncState(
 	canFetchMore bool,
 	focusedCol, totalCols int,
 	isTableQuery bool,
-	sortOrders []sharedcomponents.OrderByClause,
+	sortOrders sharedcomponents.OrderByClauses,
 ) {
 	s.focusedRow = focusedRow
 	s.totalRows = totalRows
@@ -154,6 +154,7 @@ func (s *StatusBar) SyncState(
 	s.totalCols = totalCols
 	s.isTableQuery = isTableQuery
 	s.sortOrders = sortOrders
+	s.orderingInput.SetValue(sortOrders.String())
 }
 
 // Color palette

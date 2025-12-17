@@ -58,7 +58,7 @@ func (d *DataState) PageOffset() int {
 	return d.query.PageOffset()
 }
 
-func (d *DataState) GetSortOrders() []sharedcomponents.OrderByClause {
+func (d *DataState) GetSortOrders() sharedcomponents.OrderByClauses {
 	if d.query == nil {
 		return nil
 	}
@@ -130,8 +130,8 @@ func formatCellValue(cell any) string {
 	}
 }
 
-func (d *DataState) HandleSortChange(columns []table.Column, sortOrders []table.OrderCol) []sharedcomponents.OrderByClause {
-	var orderByClauses []sharedcomponents.OrderByClause
+func (d *DataState) HandleSortChange(columns []table.Column, sortOrders []table.OrderCol) sharedcomponents.OrderByClauses {
+	var orderByClauses sharedcomponents.OrderByClauses
 
 	for _, sort := range sortOrders {
 		if sort.ColumnIndex < 0 || sort.ColumnIndex >= len(columns) {

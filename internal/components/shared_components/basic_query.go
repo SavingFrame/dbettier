@@ -8,7 +8,7 @@ import (
 
 type BasicSQLQuery struct {
 	Query      string
-	SortOrders []OrderByClause
+	SortOrders OrderByClauses
 	SQLResult  *SQLResult
 	// page
 	localOffset int
@@ -30,12 +30,12 @@ func (q *BasicSQLQuery) Compile() string {
 	return q.Query
 }
 
-func (q *BasicSQLQuery) HandleSortChange(orderBy []OrderByClause) tea.Cmd {
+func (q *BasicSQLQuery) HandleSortChange(orderBy OrderByClauses) tea.Cmd {
 	q.SortOrders = orderBy
 	return nil
 }
 
-func (q *BasicSQLQuery) GetSortOrders() []OrderByClause {
+func (q *BasicSQLQuery) GetSortOrders() OrderByClauses {
 	return q.SortOrders
 }
 
