@@ -1,7 +1,6 @@
 package components
 
 import (
-	"log"
 	"time"
 
 	"charm.land/bubbles/v2/help"
@@ -63,7 +62,6 @@ func RootScreen(registry *database.DBRegistry) rootScreenModel {
 }
 
 func (m rootScreenModel) Init() tea.Cmd {
-	log.Println("RootScreenModel Init() called")
 	var cmds []tea.Cmd
 	cmds = append(cmds, m.sqlCommandBar.InitialSQLCommand())
 	switch m.focusedPane {
@@ -93,6 +91,18 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case notifications.ClearNotificationMsg:
 		m.notification = nil
 		return m, nil
+
+	case tea.MouseReleaseMsg:
+		if msg.Button != tea.MouseLeft {
+			return m, nil
+		}
+		if zone.Get("dbTree").InBounds(msg) {
+			m.focusedPane = FocusDBTree
+		} else if zone.Get("tableview").InBounds(msg) {
+			m.focusedPane = FocusTableView
+		} else if zone.Get("sqlCommandBar").InBounds(msg) {
+			m.focusedPane = FocusSQLCommandBar
+		}
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -307,9 +317,9 @@ func (m rootScreenModel) renderSplitLayout() string {
 	}
 
 	// Get component views
-	treeView := m.renderDBTree()
-	tableView := m.renderTableView()
-	sqlView := m.renderSQLCommandBar()
+	treeView := zone.Mark("dbTree", m.renderDBTree())
+	tableView := zone.Mark("tableview", m.renderTableView())
+	sqlView := zone.Mark("sqlCommandBar", m.renderSQLCommandBar())
 
 	// Compose right column (table view on top, SQL command bar on bottom)
 	rightColumn := lipgloss.JoinVertical(lipgloss.Left, tableView, sqlView)
