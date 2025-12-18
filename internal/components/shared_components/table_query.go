@@ -128,7 +128,6 @@ func (q *TableQuery) SetWhereClause(whereClause string) tea.Cmd {
 }
 
 func (q *TableQuery) HandleSortChange(orderBy OrderByClauses) tea.Cmd {
-	log.Printf("Handling sort change: %+v", orderBy)
 	q.SortOrders = orderBy
 	return func() tea.Msg {
 		return ReapplyTableQueryMsg{

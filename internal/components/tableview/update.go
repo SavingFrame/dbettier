@@ -19,9 +19,15 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	// update status bar text input
-	if m.statusBar.focus == StatusBarFocusFilter {
+	switch m.statusBar.focus {
+	case StatusBarFocusFilter:
 		cmd, earlyExit := m.handleFilterInput(msg)
-		log.Printf("Filter input handled, earlyExit=%v\n", earlyExit)
+		cmds = append(cmds, cmd)
+		if earlyExit {
+			return m, tea.Batch(cmds...)
+		}
+	case StatusBarFocusOrdering:
+		cmd, earlyExit := m.handleOrderingInput(msg)
 		cmds = append(cmds, cmd)
 		if earlyExit {
 			return m, tea.Batch(cmds...)
@@ -61,6 +67,8 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		} else if zone.Get("filterInput").InBounds(msg) {
 			m.statusBar.SetFocus(StatusBarFocusFilter)
+		} else if zone.Get("orderingInput").InBounds(msg) {
+			m.statusBar.SetFocus(StatusBarFocusOrdering)
 		}
 	case tea.KeyMsg:
 		switch {
@@ -165,7 +173,7 @@ func (m *TableViewModel) handleFilterInput(msg tea.Msg) (tea.Cmd, bool) {
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		if key.Matches(msg, DefaultKeyMap.Enter) {
-			v := m.statusBar.FilterInput().Value()
+			v := m.statusBar.FilterValue()
 			if tq, ok := m.data.Query().(*sharedcomponents.TableQuery); ok {
 				tableUpdateCmd := tq.SetWhereClause(v)
 				cmds = append(cmds, tableUpdateCmd)
@@ -178,6 +186,62 @@ func (m *TableViewModel) handleFilterInput(msg tea.Msg) (tea.Cmd, bool) {
 			return tea.Batch(cmds...), true
 		}
 	}
-
 	return tea.Batch(cmds...), false
+}
+
+func (m *TableViewModel) handleOrderingInput(msg tea.Msg) (tea.Cmd, bool) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+	m.statusBar.orderingInput, cmd = m.statusBar.OrderingInput().Update(msg)
+	cmds = append(cmds, cmd)
+
+	keyMsg, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return tea.Batch(cmds...), false
+	}
+
+	switch {
+	case key.Matches(keyMsg, DefaultKeyMap.Enter):
+		cmd, handled := m.applyOrdering()
+		if handled {
+			cmds = append(cmds, cmd)
+		}
+		return tea.Batch(cmds...), false
+	case key.Matches(keyMsg, DefaultKeyMap.Escape):
+		m.statusBar.SetFocus(StatusBarFocusNone)
+		return tea.Batch(cmds...), true
+	default:
+		return tea.Batch(cmds...), true
+	}
+}
+
+// applyOrdering parses the ordering input and applies it to the table query.
+// Returns the command to execute and whether the ordering was successfully applied.
+func (m *TableViewModel) applyOrdering() (tea.Cmd, bool) {
+	tq, ok := m.data.Query().(*sharedcomponents.TableQuery)
+	if !ok {
+		return nil, false
+	}
+
+	orderByClauses, err := sharedcomponents.ParseOrderByClauses(m.statusBar.OrderingValue())
+	if err != nil {
+		// TODO: show error notification to user
+		return nil, false
+	}
+
+	m.table.SetSortVisually(m.orderClausesToOrderCols(orderByClauses))
+	return tq.HandleSortChange(orderByClauses), true
+}
+
+// orderClausesToOrderCols converts OrderByClauses to table.OrderCol slice
+// by resolving column names to their indices.
+func (m *TableViewModel) orderClausesToOrderCols(clauses sharedcomponents.OrderByClauses) []table.OrderCol {
+	sortOrders := make([]table.OrderCol, 0, len(clauses))
+	for _, ob := range clauses {
+		sortOrders = append(sortOrders, table.OrderCol{
+			Direction:   table.NewSortDirection(ob.Direction),
+			ColumnIndex: m.table.ColumnIndexByName(ob.ColumnName),
+		})
+	}
+	return sortOrders
 }

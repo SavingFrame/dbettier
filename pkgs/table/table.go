@@ -3,6 +3,8 @@
 package table
 
 import (
+	"strings"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -14,6 +16,14 @@ const (
 	SortAsc SortDirection = iota
 	SortDesc
 )
+
+// NewSortDirection creates a SortDirection from a string(database style).
+func NewSortDirection(s string) SortDirection {
+	if strings.ToUpper(s) == "ASC" {
+		return SortAsc
+	}
+	return SortDesc
+}
 
 // String returns the string representation of SortDirection.
 func (s SortDirection) String() string {
@@ -320,4 +330,14 @@ func (m Model) SearchMatchIndex() int {
 // SearchMatchCount returns the number of search matches.
 func (m Model) SearchMatchCount() int {
 	return len(m.searchMatches)
+}
+
+// ColumnIndexByName returns the index of the column with the given name, or -1 if not found.
+func (m Model) ColumnIndexByName(name string) int {
+	for i, col := range m.Columns() {
+		if col.Title == name {
+			return i
+		}
+	}
+	return -1
 }

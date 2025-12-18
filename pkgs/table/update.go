@@ -442,6 +442,10 @@ func (m Model) toggleSort() (Model, tea.Cmd) {
 	}
 }
 
+func (m *Model) SetSortVisually(sortOrders []OrderCol) {
+	m.orderColumns = sortOrders
+}
+
 // clearSort clears all sorting.
 func (m Model) clearSort() (Model, tea.Cmd) {
 	if len(m.orderColumns) == 0 {
