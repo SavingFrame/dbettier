@@ -6,8 +6,8 @@ import (
 )
 
 type handleDBSelectionResult struct {
-	notification tea.Cmd
-	schemas      []*database.Schema
+	err     error
+	schemas []*database.Schema
 }
 
 type handleSchemaSelectionResult struct {
@@ -16,8 +16,8 @@ type handleSchemaSelectionResult struct {
 }
 
 type loadTablesColumnsResult struct {
-	columns      map[string][]*database.Column
-	schemaName   string
-	databaseID   string
-	notification tea.Cmd
+	columns    map[string][]*database.Column
+	schemaName string
+	databaseID string
+	err        error
 }

@@ -87,12 +87,30 @@ func ParseOrderByClauses(s string) (OrderByClauses, error) {
 
 type TableLoadingMsg struct{}
 
+// LogLevel defines the severity of a log entry
+type LogLevel int
+
+const (
+	LogInfo LogLevel = iota
+	LogSuccess
+	LogWarning
+	LogError
+	LogSQL
+)
+
+// AddLogMsg is a message to add a log entry to the log panel
+type AddLogMsg struct {
+	Message string
+	Level   LogLevel
+}
+
 type ComponentTarget int
 
 const (
 	TargetSQLCommandBar ComponentTarget = 1 << iota
 	TargetTableView
 	TargetDBTree
+	TargetLogPanel
 )
 
 var MessageRoutes = map[string]ComponentTarget{
@@ -102,6 +120,7 @@ var MessageRoutes = map[string]ComponentTarget{
 	"sharedcomponents.OpenTableMsg":         TargetSQLCommandBar,
 	"sharedcomponents.ReapplyTableQueryMsg": TargetSQLCommandBar,
 	"sharedcomponents.TableLoadingMsg":      TargetTableView,
+	"sharedcomponents.AddLogMsg":            TargetLogPanel,
 }
 
 func GetMessageType(msg tea.Msg) string {

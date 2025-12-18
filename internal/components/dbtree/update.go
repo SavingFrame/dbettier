@@ -1,10 +1,12 @@
 package dbtree
 
 import (
+	"fmt"
 	"log"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
@@ -17,19 +19,32 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetSize(msg.Width, msg.Height)
 		return m, nil
 	case handleDBSelectionResult:
+		dbName := m.tree.CurrentDatabase().name
+		if msg.err != nil {
+			logMsg := fmt.Sprintf("[%s] Error loading schemas: %v", dbName, msg.err)
+			return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogError), notifications.ShowError(logMsg))
+		}
 		m.tree.SetSchemas(msg.schemas)
 		m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
-		return m, msg.notification
+		logMsg := fmt.Sprintf("[%s] Schemas loaded for database.", dbName)
+		return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogSuccess), notifications.ShowSuccess(logMsg))
 	case handleSchemaSelectionResult:
 		m.tree.SetTables(msg.tables)
 		m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		return m, msg.cmd
 	case loadTablesColumnsResult:
+		dbName := m.tree.CurrentDatabase().name
+		if msg.err != nil {
+			logMsg := fmt.Sprintf("[%s] Error loading table columns: %v", dbName, msg.err)
+			return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogError), notifications.ShowError(logMsg))
+		}
 		err := m.tree.SetColumns(msg.databaseID, msg.schemaName, msg.columns)
 		if err != nil {
-			return m, notifications.ShowError(err.Error())
+			logMsg := fmt.Sprintf("[%s] Error loading table columns: %v", dbName, err)
+			return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogError), notifications.ShowError(logMsg))
 		}
-		return m, msg.notification
+		logMsg := fmt.Sprintf("[%s] Table columns loaded for schema %s.", dbName, msg.schemaName)
+		return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogSuccess), notifications.ShowSuccess(logMsg))
 
 	case tea.KeyMsg:
 		// Handle search mode input
@@ -99,14 +114,27 @@ func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 			err := db.Connect()
 			if err != nil {
 				log.Printf("Error connecting to database: %v", err)
-				return notifications.ShowError(err.Error())
+				return handleDBSelectionResult{
+					schemas: nil,
+					err:     err,
+				}
+				// return tea.Batch(notifications.ShowError(err.Error()), logpanel.AddLogCmd(err.Error(), logpanel.LogError))
 			}
 		}
 		schemas, err := db.ParseSchemas()
 		if err != nil {
-			return notifications.ShowError(err.Error())
+			return handleDBSelectionResult{
+				schemas: nil,
+				err:     err,
+			}
 		}
-		return handleDBSelectionResult{schemas: schemas, notification: notifications.ShowInfo("Successfully connected to database.")}
+		b := handleDBSelectionResult{
+			schemas: schemas,
+			err:     err,
+			// notification: notifications.ShowInfo("Successfully connected to database."),
+		}
+		return b
+		// return tea.Batch(b, logpanel.AddLogCmd("Connected to database successfully.", logpanel.LogSuccess))
 	}
 }
 
@@ -150,7 +178,9 @@ func loadTablesColumnsCmd(schema *database.Schema) tea.Cmd {
 		tables, err := schema.LoadColumns()
 		if err != nil {
 			log.Printf("Error loading columns for schema %s: %v", schema.Name, err)
-			return notifications.ShowError(err.Error())
+			return loadTablesColumnsResult{
+				err: err,
+			}
 		}
 		tableMap := make(map[string][]*database.Column)
 		for t, cols := range tables {
@@ -160,8 +190,7 @@ func loadTablesColumnsCmd(schema *database.Schema) tea.Cmd {
 			columns:    tableMap,
 			databaseID: schema.Database.ID,
 			schemaName: schema.Name,
-
-			notification: notifications.ShowSuccess("Tables and columns loaded successfully."),
+			err:        nil,
 		}
 	}
 }
