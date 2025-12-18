@@ -40,8 +40,7 @@ func (m Model) View() string {
 
 // renderSearchBar renders the search input bar.
 func (m Model) renderSearchBar() string {
-	searchStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240"))
+	searchStyle := searchBarStyle()
 
 	if m.searchMode {
 		// Active search input
@@ -89,7 +88,7 @@ func (m Model) renderHeader() string {
 
 		// Highlight header if this column is focused
 		if m.focused && colIdx == m.focusedCol {
-			style = style.Copy().Background(lipgloss.Color("62")).Bold(true)
+			style = headerFocusedStyle(style)
 		}
 
 		headers = append(headers, style.Render(header))
@@ -306,6 +305,7 @@ func (m Model) renderScrollIndicators() string {
 		return ""
 	}
 
+	style := scrollIndicatorStyle()
 	var indicators []string
 
 	// Vertical scroll indicator
@@ -315,9 +315,7 @@ func (m Model) renderScrollIndicators() string {
 
 		if totalRows > visibleRows {
 			currentPos := m.focusedRow + 1
-			indicator := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("240")).
-				Render("Row " + formatNumber(currentPos) + "/" + formatNumber(totalRows))
+			indicator := style.Render("Row " + formatNumber(currentPos) + "/" + formatNumber(totalRows))
 			indicators = append(indicators, indicator)
 		}
 	}
@@ -328,9 +326,7 @@ func (m Model) renderScrollIndicators() string {
 		totalCols := len(m.cols)
 
 		if totalCols > 1 {
-			indicator := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("240")).
-				Render("Col " + formatNumber(currentCol) + "/" + formatNumber(totalCols))
+			indicator := style.Render("Col " + formatNumber(currentCol) + "/" + formatNumber(totalCols))
 			indicators = append(indicators, indicator)
 		}
 	}
@@ -339,9 +335,7 @@ func (m Model) renderScrollIndicators() string {
 		return ""
 	}
 
-	return lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
-		Render(strings.Join(indicators, " | "))
+	return style.Render(strings.Join(indicators, " | "))
 }
 
 // formatNumber formats a number as a string.

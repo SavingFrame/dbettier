@@ -13,19 +13,8 @@ import (
 )
 
 var (
-	focusedColor        = lipgloss.Color("205")
-	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	successStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
-	noStyle             = lipgloss.NewStyle()
-	helpStyle           = blurredStyle
-	cursorModeHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-
-	focusedButton     = focusedStyle.Render("[ Submit ]")
-	testButton        = fmt.Sprintf("[ %s ]", blurredStyle.Render("Test Connection"))
-	focusedTestButton = focusedStyle.Render("[ Test Connection ]")
-	blurredButton     = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
-	countButtons      = 2
+	noStyle      = lipgloss.NewStyle()
+	countButtons = 2
 )
 
 type DBCreatorModel struct {
@@ -47,9 +36,9 @@ func DBCreatorScreen(registry *database.DBRegistry) DBCreatorModel {
 	for i := range m.inputs {
 		t = textinput.New()
 		s := t.Styles()
-		s.Cursor.Color = focusedColor
-		s.Focused.Prompt = focusedStyle
-		s.Focused.Text = focusedStyle
+		s.Cursor.Color = dbcFocusedColor()
+		s.Focused.Prompt = dbcFocusedStyle()
+		s.Focused.Text = dbcFocusedStyle()
 		s.Blurred.Prompt = noStyle
 		s.Blurred.Text = noStyle
 		t.CharLimit = 32
@@ -219,29 +208,29 @@ func (m DBCreatorModel) View() tea.View {
 		}
 	}
 
-	button := &blurredButton
-	tButton := &testButton
+	button := dbcBlurredButton()
+	tButton := dbcTestButton()
 	switch m.focusIndex {
 	case 5:
-		button = &focusedButton
+		button = dbcFocusedButton()
 	case 6:
-		tButton = &focusedTestButton
+		tButton = dbcFocusedTestButton()
 	}
 	if m.focusIndex == len(m.inputs) {
-		button = &focusedButton
+		button = dbcFocusedButton()
 	}
-	fmt.Fprintf(&b, "\n\n%s%s\n\n", *button, *tButton)
+	fmt.Fprintf(&b, "\n\n%s%s\n\n", button, tButton)
 
 	if m.dbTestStatus != "" {
-		fmt.Fprintf(&b, "\n%s\n\n", successStyle.Render(m.dbTestStatus))
+		fmt.Fprintf(&b, "\n%s\n\n", dbcSuccessStyle().Render(m.dbTestStatus))
 	}
 	if m.err != "" {
-		fmt.Fprintf(&b, "\n%s\n\n", lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(m.err))
+		fmt.Fprintf(&b, "\n%s\n\n", dbcErrorStyle().Render(m.err))
 	}
 
-	b.WriteString(helpStyle.Render("cursor mode is "))
-	b.WriteString(cursorModeHelpStyle.Render(m.cursorMode.String()))
-	b.WriteString(helpStyle.Render(" (ctrl+r to change style)"))
+	b.WriteString(dbcHelpStyle().Render("cursor mode is "))
+	b.WriteString(dbcCursorModeHelpStyle().Render(m.cursorMode.String()))
+	b.WriteString(dbcHelpStyle().Render(" (ctrl+r to change style)"))
 
 	v.AltScreen = true
 	v.SetContent(b.String())

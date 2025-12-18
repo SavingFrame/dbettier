@@ -14,6 +14,7 @@ import (
 	sqlcommandbar "github.com/SavingFrame/dbettier/internal/components/sql_commandbar"
 	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
+	"github.com/SavingFrame/dbettier/internal/theme"
 	zone "github.com/lrstanley/bubblezone/v2"
 )
 
@@ -361,9 +362,10 @@ func (m rootScreenModel) renderSplitLayout() string {
 }
 
 func (m rootScreenModel) renderDBTree() string {
-	borderColor := lipgloss.Color("240")
+	colors := theme.Current().Colors
+	borderColor := colors.Border
 	if m.focusedPane == FocusDBTree {
-		borderColor = lipgloss.Color("205")
+		borderColor = colors.BorderFocused
 	}
 
 	// Calculate fixed width for dbtree
@@ -382,9 +384,10 @@ func (m rootScreenModel) renderDBTree() string {
 }
 
 func (m rootScreenModel) renderTableView() string {
-	borderColor := lipgloss.Color("240")
+	colors := theme.Current().Colors
+	borderColor := colors.Border
 	if m.focusedPane == FocusTableView {
-		borderColor = lipgloss.Color("205")
+		borderColor = colors.BorderFocused
 	}
 
 	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
@@ -398,9 +401,10 @@ func (m rootScreenModel) renderTableView() string {
 }
 
 func (m rootScreenModel) renderSQLCommandBar() string {
-	borderColor := lipgloss.Color("240")
+	colors := theme.Current().Colors
+	borderColor := colors.Border
 	if m.focusedPane == FocusSQLCommandBar {
-		borderColor = lipgloss.Color("205")
+		borderColor = colors.BorderFocused
 	}
 
 	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
@@ -421,9 +425,10 @@ func (m rootScreenModel) renderSQLCommandBar() string {
 }
 
 func (m rootScreenModel) renderLogPanel() string {
-	borderColor := lipgloss.Color("240")
+	colors := theme.Current().Colors
+	borderColor := colors.Border
 	if m.focusedPane == FocusLogPanel {
-		borderColor = lipgloss.Color("205")
+		borderColor = colors.BorderFocused
 	}
 
 	leftWidth := int(float64(m.width) * DBTreeWidthRatio)

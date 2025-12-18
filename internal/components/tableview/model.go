@@ -3,7 +3,6 @@ package tableview
 import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 )
 
@@ -26,7 +25,7 @@ func TableViewScreen() TableViewModel {
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	s.Style = spinnerStyle()
 
 	return TableViewModel{
 		viewport:  Viewport{},

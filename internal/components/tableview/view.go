@@ -4,12 +4,7 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 )
-
-var placeholderStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("240")).
-	Italic(true)
 
 // View implements tea.Model interface
 func (m TableViewModel) View() tea.View {
@@ -26,7 +21,7 @@ func (m TableViewModel) RenderContent() string {
 		return fmt.Sprintf("\n\n   %s Fetching data...\n\n", m.spinner.View())
 	}
 	if !m.viewport.IsReady() {
-		return placeholderStyle.Render("Table view (empty)")
+		return placeholderStyle().Render("Table view (empty)")
 	}
 	return m.table.View() + "\n" + m.statusBar.View()
 }

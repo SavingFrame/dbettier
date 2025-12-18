@@ -3,7 +3,6 @@ package logpanel
 import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 )
 
@@ -104,24 +103,6 @@ func (m *LogPanelModel) refreshContent() {
 	}
 
 	m.viewport.SetContent(content)
-}
-
-// getStyleForLevel returns the lipgloss style for a given log level
-func getStyleForLevel(level sharedcomponents.LogLevel) lipgloss.Style {
-	switch level {
-	case sharedcomponents.LogInfo:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("245")) // Gray
-	case sharedcomponents.LogSuccess:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("42")) // Green
-	case sharedcomponents.LogWarning:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("214")) // Orange
-	case sharedcomponents.LogError:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
-	case sharedcomponents.LogSQL:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("75")) // Cyan/Blue
-	default:
-		return lipgloss.NewStyle()
-	}
 }
 
 func AddLogCmd(message string, level sharedcomponents.LogLevel) tea.Cmd {

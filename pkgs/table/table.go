@@ -97,40 +97,6 @@ type Styles struct {
 	SearchMatchActive lipgloss.Style // Currently focused search match
 }
 
-// DefaultStyles returns a set of default style definitions for this table.
-func DefaultStyles() Styles {
-	return Styles{
-		Header: lipgloss.NewStyle().
-			Bold(true).
-			Padding(0, 1).
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderBottom(true).
-			BorderForeground(lipgloss.Color("240")),
-		Cell: lipgloss.NewStyle().
-			Padding(0, 1),
-		SelectedCell: lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(lipgloss.Color("57")).
-			Foreground(lipgloss.Color("229")).
-			Bold(true),
-		SelectedRow: lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(lipgloss.Color("237")),
-		SelectedCol: lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(lipgloss.Color("237")),
-		SearchMatch: lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(lipgloss.Color("136")). // Yellow background
-			Foreground(lipgloss.Color("0")),   // Black text
-		SearchMatchActive: lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(lipgloss.Color("208")). // Orange background for current match
-			Foreground(lipgloss.Color("0")).   // Black text
-			Bold(true),
-	}
-}
-
 // Option is used to set options in New.
 type Option func(*Model)
 

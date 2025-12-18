@@ -13,27 +13,18 @@ func (m DBTreeModel) Init() tea.Cmd {
 	return nil
 }
 
-var (
-	enumeratorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("63")).MarginRight(1)
-	rootStyle              = lipgloss.NewStyle().Foreground(lipgloss.Color("35"))
-	itemStyle              = lipgloss.NewStyle().Foreground(lipgloss.Color("212"))
-	focusedStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	searchMatchStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Background(lipgloss.Color("136"))
-	searchMatchActiveStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Background(lipgloss.Color("208"))
-)
-
 // renderNode is a recursive helper that adds a node and its children to the tree
 func (m DBTreeModel) renderNode(t *tree.Tree, nodeText string, isFocused bool, isSearchMatch bool, isActiveMatch bool, children func(*tree.Tree)) {
 	var styledText string
 
 	if isActiveMatch {
-		styledText = searchMatchActiveStyle.Render(nodeText)
+		styledText = searchMatchActiveStyle().Render(nodeText)
 	} else if isSearchMatch {
-		styledText = searchMatchStyle.Render(nodeText)
+		styledText = searchMatchStyle().Render(nodeText)
 	} else if isFocused {
-		styledText = focusedStyle.Render(nodeText)
+		styledText = focusedStyle().Render(nodeText)
 	} else {
-		styledText = itemStyle.Render(nodeText)
+		styledText = itemStyle().Render(nodeText)
 	}
 
 	if children == nil {
@@ -177,8 +168,8 @@ func (m DBTreeModel) RenderContent() string {
 	t := tree.
 		Root("Databases:").
 		Enumerator(tree.RoundedEnumerator).
-		EnumeratorStyle(enumeratorStyle).
-		RootStyle(rootStyle)
+		EnumeratorStyle(enumeratorStyle()).
+		RootStyle(rootStyle())
 
 	// Render all databases
 	for dbIdx, db := range m.tree.databases {
@@ -229,8 +220,7 @@ func (m DBTreeModel) RenderContent() string {
 
 // renderSearchBar renders the search input bar.
 func (m DBTreeModel) renderSearchBar() string {
-	searchStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240"))
+	style := searchBarStyle()
 
 	if m.search.mode {
 		// Active search input
@@ -241,12 +231,12 @@ func (m DBTreeModel) renderSearchBar() string {
 		} else if m.search.query != "" {
 			matchInfo = " [no matches]"
 		}
-		return searchStyle.Render(fmt.Sprintf("/%s%s%s", m.search.query, cursor, matchInfo))
+		return style.Render(fmt.Sprintf("/%s%s%s", m.search.query, cursor, matchInfo))
 	}
 
 	// Not in search mode but showing match count
 	if len(m.search.matches) > 0 {
-		return searchStyle.Render(fmt.Sprintf("Search: %q [%d/%d] (n/N to navigate)",
+		return style.Render(fmt.Sprintf("Search: %q [%d/%d] (n/N to navigate)",
 			m.search.query, m.search.matchIndex+1, len(m.search.matches)))
 	}
 

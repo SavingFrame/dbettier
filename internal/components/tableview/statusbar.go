@@ -7,8 +7,31 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/theme"
 	zone "github.com/lrstanley/bubblezone/v2"
 )
+
+// inputStyles returns the text input styles using current theme
+func inputStyles() textinput.Styles {
+	colors := theme.Current().Colors
+	inputBg := colors.Surface
+	inputTextStyle := lipgloss.NewStyle().Background(inputBg).Foreground(colors.Text)
+	inputPlaceholderStyle := lipgloss.NewStyle().Background(inputBg).Foreground(colors.Muted)
+	inputPromptStyle := lipgloss.NewStyle().Background(inputBg).Foreground(colors.Info)
+
+	return textinput.Styles{
+		Focused: textinput.StyleState{
+			Text:        inputTextStyle,
+			Placeholder: inputPlaceholderStyle,
+			Prompt:      inputPromptStyle,
+		},
+		Blurred: textinput.StyleState{
+			Text:        inputTextStyle,
+			Placeholder: inputPlaceholderStyle,
+			Prompt:      inputPromptStyle.Foreground(colors.Muted),
+		},
+	}
+}
 
 // StatusBarFocus represents which element of the status bar is focused
 type StatusBarFocus int
@@ -44,35 +67,19 @@ type StatusBar struct {
 
 // NewStatusBar creates a new status bar
 func NewStatusBar() StatusBar {
-	inputBg := lipgloss.Color("237")
-	inputTextStyle := lipgloss.NewStyle().Background(inputBg).Foreground(lipgloss.Color("252"))
-	inputPlaceholderStyle := lipgloss.NewStyle().Background(inputBg).Foreground(lipgloss.Color("243"))
-	inputPromptStyle := lipgloss.NewStyle().Background(inputBg).Foreground(lipgloss.Color("75"))
-
-	inputStyles := textinput.Styles{
-		Focused: textinput.StyleState{
-			Text:        inputTextStyle,
-			Placeholder: inputPlaceholderStyle,
-			Prompt:      inputPromptStyle,
-		},
-		Blurred: textinput.StyleState{
-			Text:        inputTextStyle,
-			Placeholder: inputPlaceholderStyle,
-			Prompt:      inputPromptStyle.Foreground(lipgloss.Color("243")),
-		},
-	}
+	styles := inputStyles()
 
 	filterInput := textinput.New()
 	filterInput.Placeholder = "filter..."
 	filterInput.CharLimit = 256
 	filterInput.SetWidth(25)
-	filterInput.SetStyles(inputStyles)
+	filterInput.SetStyles(styles)
 
 	orderingInput := textinput.New()
 	orderingInput.Placeholder = "col ASC/DESC"
 	orderingInput.CharLimit = 256
 	orderingInput.SetWidth(25)
-	orderingInput.SetStyles(inputStyles)
+	orderingInput.SetStyles(styles)
 
 	return StatusBar{
 		pagination:    Pagination{},
@@ -157,64 +164,6 @@ func (s *StatusBar) SyncState(
 	s.orderingInput.SetValue(sortOrders.String())
 }
 
-// Color palette
-var (
-	sbDimColor     = lipgloss.Color("241")
-	sbSubtleColor  = lipgloss.Color("245")
-	sbTextColor    = lipgloss.Color("252")
-	sbAccentColor  = lipgloss.Color("75")  // Light blue
-	sbWarningColor = lipgloss.Color("214") // Orange
-
-	sbPrimaryBg   = lipgloss.Color("33")  // Blue
-	sbSecondaryBg = lipgloss.Color("240") // Dark gray
-	sbInputBg     = lipgloss.Color("237") // Darker gray
-)
-
-// Styles
-var (
-	sbIconStyle = lipgloss.NewStyle().
-			Foreground(sbAccentColor).
-			Bold(true)
-
-	sbSepStyle = lipgloss.NewStyle().
-			Foreground(sbDimColor)
-
-	sbLabelStyle = lipgloss.NewStyle().
-			Foreground(sbSubtleColor)
-
-	sbValueStyle = lipgloss.NewStyle().
-			Foreground(sbTextColor)
-
-	sbPaginationMsgStyle = lipgloss.NewStyle().
-				Foreground(sbWarningColor).
-				Bold(true)
-
-	sbInputLabelStyle = lipgloss.NewStyle().
-				Foreground(sbAccentColor).
-				Bold(true)
-
-	sbInputStyle = lipgloss.NewStyle().
-			Background(sbInputBg).
-			Padding(0, 1)
-
-	sbButtonStyle = lipgloss.NewStyle().
-			Foreground(sbTextColor).
-			Background(sbSecondaryBg).
-			Padding(0, 1)
-
-	sbButtonPrimaryStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("255")).
-				Background(sbPrimaryBg).
-				Bold(true).
-				Padding(0, 1)
-
-	sbSortStyle = lipgloss.NewStyle().
-			Foreground(sbAccentColor)
-
-	sbInfoStyle = lipgloss.NewStyle().
-			Foreground(sbSubtleColor)
-)
-
 // View renders the status bar
 func (s *StatusBar) View() string {
 	// Single line: Controls on left, position info on right
@@ -224,7 +173,7 @@ func (s *StatusBar) View() string {
 	// Add pagination message if present
 	paginationMsg := ""
 	if msg := s.pagination.Message(); msg != "" {
-		paginationMsg = "   " + sbPaginationMsgStyle.Render(" "+msg)
+		paginationMsg = "   " + sbPaginationMsgStyle().Render(" "+msg)
 	}
 
 	// Calculate spacing to push position info to the right
@@ -246,18 +195,18 @@ func (s *StatusBar) renderControls() string {
 	var parts []string
 
 	// Filter input
-	filterLabel := sbInputLabelStyle.Render(" Filter ")
-	filterInput := zone.Mark("filterInput", sbInputStyle.Render(s.filterInput.View()))
+	filterLabel := sbInputLabelStyle().Render(" Filter ")
+	filterInput := zone.Mark("filterInput", sbInputStyle().Render(s.filterInput.View()))
 	parts = append(parts, filterLabel+filterInput)
 
 	// Order input
-	orderLabel := sbInputLabelStyle.Render(" Order ")
-	orderInput := zone.Mark("orderingInput", sbInputStyle.Render(s.orderingInput.View()))
+	orderLabel := sbInputLabelStyle().Render(" Order ")
+	orderInput := zone.Mark("orderingInput", sbInputStyle().Render(s.orderingInput.View()))
 	parts = append(parts, orderLabel+orderInput)
 
 	// Buttons
-	refreshBtn := zone.Mark("refresh", sbButtonPrimaryStyle.Render("↻ Refresh"))
-	countBtn := zone.Mark("count", sbButtonStyle.Render("# Count"))
+	refreshBtn := zone.Mark("refresh", sbButtonPrimaryStyle().Render("↻ Refresh"))
+	countBtn := zone.Mark("count", sbButtonStyle().Render("# Count"))
 
 	parts = append(parts, refreshBtn)
 	parts = append(parts, countBtn)
@@ -269,11 +218,11 @@ func (s *StatusBar) renderPositionInfo() string {
 	var parts []string
 
 	// Table type icon
-	icon := ""
+	icon := ""
 	if s.isTableQuery {
 		icon = "󰓫"
 	}
-	parts = append(parts, sbIconStyle.Render(icon))
+	parts = append(parts, sbIconStyle().Render(icon))
 
 	// Sort orders (before position)
 	if len(s.sortOrders) > 0 {
@@ -283,9 +232,9 @@ func (s *StatusBar) renderPositionInfo() string {
 			if order.Direction == "DESC" {
 				dir = "↓"
 			}
-			orderParts = append(orderParts, sbSortStyle.Render(order.ColumnName+" "+dir))
+			orderParts = append(orderParts, sbSortStyle().Render(order.ColumnName+" "+dir))
 		}
-		sortInfo := sbLabelStyle.Render("Sort ") + strings.Join(orderParts, sbDimStyle.Render(", "))
+		sortInfo := sbLabelStyle().Render("Sort ") + strings.Join(orderParts, sbDimStyle().Render(", "))
 		parts = append(parts, sortInfo)
 	}
 
@@ -296,24 +245,22 @@ func (s *StatusBar) renderPositionInfo() string {
 		if s.canFetchMore {
 			totalRowsStr += "+"
 		}
-		rowInfo := sbLabelStyle.Render("Row ") +
-			sbValueStyle.Render(fmt.Sprintf("%d", currentPos)) +
-			sbDimStyle.Render("/") +
-			sbValueStyle.Render(totalRowsStr)
+		rowInfo := sbLabelStyle().Render("Row ") +
+			sbValueStyle().Render(fmt.Sprintf("%d", currentPos)) +
+			sbDimStyle().Render("/") +
+			sbValueStyle().Render(totalRowsStr)
 		parts = append(parts, rowInfo)
 	}
 
 	// Col position
 	if s.totalCols > 1 {
-		colInfo := sbLabelStyle.Render("Col ") +
-			sbValueStyle.Render(fmt.Sprintf("%d", s.focusedCol+1)) +
-			sbDimStyle.Render("/") +
-			sbValueStyle.Render(fmt.Sprintf("%d", s.totalCols))
+		colInfo := sbLabelStyle().Render("Col ") +
+			sbValueStyle().Render(fmt.Sprintf("%d", s.focusedCol+1)) +
+			sbDimStyle().Render("/") +
+			sbValueStyle().Render(fmt.Sprintf("%d", s.totalCols))
 		parts = append(parts, colInfo)
 	}
 
-	sep := sbSepStyle.Render(" │ ")
+	sep := sbSepStyle().Render(" │ ")
 	return strings.Join(parts, sep)
 }
-
-var sbDimStyle = lipgloss.NewStyle().Foreground(sbDimColor)
