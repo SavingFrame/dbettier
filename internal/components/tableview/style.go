@@ -55,8 +55,8 @@ func sbButtonStyle() lipgloss.Style {
 
 func sbButtonPrimaryStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(theme.Current().Colors.Text).
-		Background(theme.Current().Colors.Secondary).
+		Foreground(theme.Current().Colors.Base).
+		Background(theme.Current().Colors.Primary).
 		Bold(true).
 		Padding(0, 1)
 }

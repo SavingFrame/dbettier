@@ -42,7 +42,7 @@ func DefaultStyles() Styles {
 
 // headerFocusedStyle returns style for a focused column header.
 func headerFocusedStyle(base lipgloss.Style) lipgloss.Style {
-	return base.Background(theme.Current().Colors.Primary).Bold(true)
+	return base.Background(theme.Current().Colors.Primary).Foreground(theme.Current().Colors.Base).Bold(true)
 }
 
 // searchBarStyle returns the style for the search bar.
