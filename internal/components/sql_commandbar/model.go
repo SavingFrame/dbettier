@@ -1,3 +1,4 @@
+// Package sqlcommandbar provides an interactive SQL command input bar component.
 package sqlcommandbar
 
 import (

@@ -1,3 +1,4 @@
+// Package components provides the main UI components for the dbettier application.
 package components
 
 import (
@@ -437,13 +438,11 @@ func (m rootScreenModel) renderLogPanel() string {
 	logPanelWidth := rightWidth - sqlCommandBarWidth
 	_, tableViewY := m.tableview.GetSize()
 
-	helpHeight := 1
-
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
 		Width(logPanelWidth + 4).
-		Height(m.height - tableViewY - helpHeight)
+		Height(m.height - tableViewY)
 
 	content := m.logPanel.RenderContent()
 	return borderStyle.Render(content)

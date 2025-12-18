@@ -1,3 +1,4 @@
+// Package main is the entry point for dbettier, a terminal-based database management tool.
 package main
 
 import (

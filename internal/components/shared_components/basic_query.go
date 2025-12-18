@@ -1,3 +1,4 @@
+// Package sharedcomponents provides common types and utilities shared across UI components.
 package sharedcomponents
 
 import (

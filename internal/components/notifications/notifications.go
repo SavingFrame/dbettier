@@ -1,3 +1,4 @@
+// Package notifications provides toast-style notification components for user feedback.
 package notifications
 
 import (

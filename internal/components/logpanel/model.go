@@ -1,3 +1,4 @@
+// Package logpanel provides a scrollable log panel component for displaying application logs.
 package logpanel
 
 import (

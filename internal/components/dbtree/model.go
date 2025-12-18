@@ -1,3 +1,4 @@
+// Package dbtree provides a tree view component for navigating database schemas and tables.
 package dbtree
 
 import (

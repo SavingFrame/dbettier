@@ -1,3 +1,4 @@
+// Package tableview provides a data table view component for displaying query results.
 package tableview
 
 import (

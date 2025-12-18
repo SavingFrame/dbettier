@@ -1,3 +1,4 @@
+// Package database provides database connectivity and schema introspection for PostgreSQL.
 package database
 
 import (
