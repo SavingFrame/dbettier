@@ -96,7 +96,15 @@ func (m *LogPanelModel) refreshContent() {
 	var content string
 	for i, entry := range m.entries {
 		style := getStyleForLevel(entry.Level)
-		line := style.Render(entry.Message)
+		message := entry.Message
+		if entry.Level == sharedcomponents.LogSQL {
+			var err error
+			message, err = highlightCode(entry.Message, "sql")
+			if err != nil {
+				message = entry.Message
+			}
+		}
+		line := style.Render(message)
 		if i > 0 {
 			content += "\n"
 		}

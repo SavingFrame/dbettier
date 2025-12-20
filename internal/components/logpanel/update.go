@@ -1,8 +1,13 @@
 package logpanel
 
 import (
+	"bytes"
+	"fmt"
+
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/theme"
+	"github.com/alecthomas/chroma/v2/quick"
 )
 
 func (m LogPanelModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -38,4 +43,14 @@ func convertLogLevel(level sharedcomponents.LogLevel) sharedcomponents.LogLevel 
 	default:
 		return sharedcomponents.LogInfo
 	}
+}
+
+// highlightCode returns a syntax highlighted string of text.
+func highlightCode(content, extension string) (string, error) {
+	buf := new(bytes.Buffer)
+	s := theme.Current().Name
+	if err := quick.Highlight(buf, content, extension, "terminal256", s); err != nil {
+		return "", fmt.Errorf("%w", err)
+	}
+	return buf.String(), nil
 }
