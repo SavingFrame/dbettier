@@ -12,8 +12,7 @@ import (
 	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
-	sqlcommandbar "github.com/SavingFrame/dbettier/internal/components/sql_commandbar"
-	"github.com/SavingFrame/dbettier/internal/components/tableview"
+	"github.com/SavingFrame/dbettier/internal/components/workspace"
 	"github.com/SavingFrame/dbettier/internal/database"
 	"github.com/SavingFrame/dbettier/internal/theme"
 	zone "github.com/lrstanley/bubblezone/v2"
@@ -37,10 +36,9 @@ const (
 )
 
 type rootScreenModel struct {
-	dbtree        dbtree.DBTreeModel
-	tableview     tableview.TableViewModel
-	sqlCommandBar sqlcommandbar.SQLCommandBarModel
-	logPanel      logpanel.LogPanelModel
+	dbtree    dbtree.DBTreeModel
+	workspace workspace.Workspace
+	logPanel  logpanel.LogPanelModel
 
 	// State
 	focusedPane  FocusedPane
@@ -55,29 +53,28 @@ type rootScreenModel struct {
 }
 
 func RootScreen(registry *database.DBRegistry) rootScreenModel {
-	// Initialize all four components for split layout
+	// Initialize all components for split layout
 	return rootScreenModel{
-		dbtree:        dbtree.DBTreeScreen(registry),
-		tableview:     tableview.TableViewScreen(),
-		sqlCommandBar: sqlcommandbar.SQLCommandBarScreen(registry),
-		logPanel:      logpanel.LogPanelScreen(),
-		focusedPane:   FocusDBTree,
-		registry:      registry,
-		help:          help.New(),
-		keys:          DefaultGlobalKeyMap,
+		dbtree:      dbtree.DBTreeScreen(registry),
+		workspace:   workspace.New(registry),
+		logPanel:    logpanel.LogPanelScreen(),
+		focusedPane: FocusDBTree,
+		registry:    registry,
+		help:        help.New(),
+		keys:        DefaultGlobalKeyMap,
 	}
 }
 
 func (m rootScreenModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	cmds = append(cmds, m.sqlCommandBar.InitialSQLCommand())
+	cmds = append(cmds, m.workspace.InitialSQLCommand())
 	switch m.focusedPane {
 	case FocusDBTree:
 		cmds = append(cmds, m.dbtree.Init())
 	case FocusTableView:
-		cmds = append(cmds, m.tableview.Init())
+		cmds = append(cmds, m.workspace.Init())
 	case FocusSQLCommandBar:
-		cmds = append(cmds, m.sqlCommandBar.Init())
+		cmds = append(cmds, m.workspace.Init())
 	case FocusLogPanel:
 		cmds = append(cmds, m.logPanel.Init())
 	}
@@ -105,6 +102,14 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Button != tea.MouseLeft {
 			return m, nil
 		}
+
+		if zone.Get("tabbar").InBounds(msg) {
+			handled, tabCmd := m.workspace.HandleMouseClick(msg)
+			if handled {
+				return m, tabCmd
+			}
+		}
+
 		if zone.Get("dbTree").InBounds(msg) {
 			m.focusedPane = FocusDBTree
 		} else if zone.Get("tableview").InBounds(msg) {
@@ -122,9 +127,10 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update help width for proper truncation
 		m.help.SetWidth(msg.Width)
 
-		// Reserve space for short help bar at bottom (1 line)
+		// Reserve space for short help bar at bottom (1 line) and tab bar at top
 		helpHeight := 1
-		availableHeight := m.height - helpHeight
+		tabBarHeight := workspace.TabBarHeight
+		availableHeight := m.height - helpHeight - tabBarHeight
 
 		// Calculate dimensions for each component
 		leftWidth := int(float64(m.width) * DBTreeWidthRatio)
@@ -138,9 +144,9 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Update component sizes (accounting for borders: 2 per side = 4 for width, 2 for height)
 		// Each border style will add 2 to width and 2 to height, so we subtract those
-		m.dbtree.SetSize(leftWidth-4, availableHeight-2)
-		m.tableview.SetSize(rightWidth-4, tableViewHeight-2)
-		m.sqlCommandBar.SetSize(sqlCommandBarWidth-4, bottomRowHeight)
+		m.dbtree.SetSize(leftWidth-4, m.height-helpHeight-2)
+		m.workspace.SetSize(rightWidth, tabBarHeight)
+		m.workspace.SetTabSizes(rightWidth-4, tableViewHeight-2, sqlCommandBarWidth-4, bottomRowHeight)
 		m.logPanel.SetSize(logPanelWidth+4, bottomRowHeight-2) // TODO: Something weird with width here. if i add +4 it show more content?
 		return m, nil
 
@@ -151,13 +157,18 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		// Handle tab navigation (works globally, not just when focused on tabbar)
+		if m.workspace.HandleKeys(msg) {
+			return m, nil
+		}
+
 		// Handle focus switching with ctrl+h and ctrl+l
 		switch {
 		case key.Matches(msg, m.keys.FocusLeft):
 			oldFocus := m.focusedPane
 			m.focusedPane = FocusDBTree
 			if oldFocus == FocusSQLCommandBar {
-				m.sqlCommandBar.Blur()
+				m.workspace.Blur()
 			}
 			return m, nil
 		case key.Matches(msg, m.keys.FocusNext):
@@ -170,8 +181,8 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			m.focusedPane = paneOrder[(oldFocusIndex+1)%len(paneOrder)]
-			if oldFocus != FocusSQLCommandBar {
-				return m, m.sqlCommandBar.Focus()
+			if m.focusedPane == FocusSQLCommandBar {
+				return m, m.workspace.Focus()
 			}
 			return m, nil
 		case key.Matches(msg, m.keys.FocusPrev):
@@ -186,7 +197,10 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.focusedPane = paneOrder[(oldFocusIndex-1+len(paneOrder))%len(paneOrder)]
 			if oldFocus == FocusSQLCommandBar {
-				m.sqlCommandBar.Blur()
+				m.workspace.Blur()
+			}
+			if m.focusedPane == FocusSQLCommandBar {
+				return m, m.workspace.Focus()
 			}
 			return m, nil
 		case key.Matches(msg, m.keys.Escape) && m.help.ShowAll:
@@ -208,14 +222,10 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.dbtree = treeModel.(dbtree.DBTreeModel)
 		cmds = append(cmds, cmd)
 	case FocusTableView:
-		var tableModel tea.Model
-		tableModel, cmd = m.tableview.Update(msg)
-		m.tableview = tableModel.(tableview.TableViewModel)
+		cmd = m.workspace.UpdateActiveTableView(msg)
 		cmds = append(cmds, cmd)
 	case FocusSQLCommandBar:
-		var sqlModel tea.Model
-		sqlModel, cmd = m.sqlCommandBar.Update(msg)
-		m.sqlCommandBar = sqlModel.(sqlcommandbar.SQLCommandBarModel)
+		cmd = m.workspace.UpdateActiveSQLCommandBar(msg)
 		cmds = append(cmds, cmd)
 	case FocusLogPanel:
 		var logModel tea.Model
@@ -245,25 +255,36 @@ func (m *rootScreenModel) routeToComponents(msg tea.Msg) []tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
-	if targets&sharedcomponents.TargetTableView != 0 {
-		var tableView tea.Model
-		tableView, cmd = m.tableview.Update(msg)
-		m.tableview = tableView.(tableview.TableViewModel)
-		cmds = append(cmds, cmd)
-	}
-
-	if targets&sharedcomponents.TargetSQLCommandBar != 0 {
-		var sqlModel tea.Model
-		sqlModel, cmd = m.sqlCommandBar.Update(msg)
-		m.sqlCommandBar = sqlModel.(sqlcommandbar.SQLCommandBarModel)
-		cmds = append(cmds, cmd)
-	}
-
 	if targets&sharedcomponents.TargetLogPanel != 0 {
 		var logModel tea.Model
 		logModel, cmd = m.logPanel.Update(msg)
 		m.logPanel = logModel.(logpanel.LogPanelModel)
 		cmds = append(cmds, cmd)
+	}
+
+	// Route to active tab's components
+	if targets&sharedcomponents.TargetWorkspace != 0 {
+		// Handle OpenTableMsg specially - create new tab
+		var workspaceModel tea.Model
+		workspaceModel, cmd = m.workspace.Update(msg)
+		m.workspace = workspaceModel.(workspace.Workspace)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+
+	if targets&sharedcomponents.TargetTableView != 0 {
+		cmd = m.workspace.UpdateActiveTableView(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+
+	if targets&sharedcomponents.TargetSQLCommandBar != 0 {
+		cmd = m.workspace.UpdateActiveSQLCommandBar(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	}
 
 	return cmds
@@ -346,6 +367,7 @@ func (m rootScreenModel) renderSplitLayout() string {
 
 	// Get component views
 	treeView := zone.Mark("dbTree", m.renderDBTree())
+	tabBarView := zone.Mark("tabbar", m.renderTabBar())
 	tableView := zone.Mark("tableview", m.renderTableView())
 	sqlView := zone.Mark("sqlCommandBar", m.renderSQLCommandBar())
 	logView := zone.Mark("logPanel", m.renderLogPanel())
@@ -353,8 +375,8 @@ func (m rootScreenModel) renderSplitLayout() string {
 	// Compose bottom row (SQL command bar on left, log panel on right)
 	bottomRow := lipgloss.JoinHorizontal(lipgloss.Left, sqlView, logView)
 
-	// Compose right column (table view on top, bottom row on bottom)
-	rightColumn := lipgloss.JoinVertical(lipgloss.Left, tableView, bottomRow)
+	// Compose right column (tab bar on top, table view below, bottom row at bottom)
+	rightColumn := lipgloss.JoinVertical(lipgloss.Left, tabBarView, tableView, bottomRow)
 
 	// Compose full layout (tree on left, right column on right)
 	layout := lipgloss.JoinHorizontal(lipgloss.Left, treeView, rightColumn)
@@ -384,6 +406,10 @@ func (m rootScreenModel) renderDBTree() string {
 	return borderStyle.Render(content)
 }
 
+func (m rootScreenModel) renderTabBar() string {
+	return m.workspace.RenderTabBar()
+}
+
 func (m rootScreenModel) renderTableView() string {
 	colors := theme.Current().Colors
 	borderColor := colors.Border
@@ -397,7 +423,7 @@ func (m rootScreenModel) renderTableView() string {
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).Width(m.width - leftWidth)
 
-	content := m.tableview.RenderContent()
+	content := m.workspace.RenderActiveTableView()
 	return borderStyle.Render(content)
 }
 
@@ -411,17 +437,18 @@ func (m rootScreenModel) renderSQLCommandBar() string {
 	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
 	rightWidth := m.width - leftWidth
 	sqlCommandBarWidth := int(float64(rightWidth) * SQLCommandBarWidthRatio)
-	_, tableViewY := m.tableview.GetSize()
+	_, tableViewY := m.workspace.GetActiveTableViewSize()
 
 	helpHeight := 1
+	tabBarHeight := workspace.TabBarHeight
 
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
 		Width(sqlCommandBarWidth - 4).
-		Height(m.height - tableViewY - helpHeight)
+		Height(m.height - tableViewY - helpHeight - tabBarHeight)
 
-	content := m.sqlCommandBar.RenderContent()
+	content := m.workspace.RenderActiveSQLCommandBar()
 	return borderStyle.Render(content)
 }
 
@@ -436,13 +463,15 @@ func (m rootScreenModel) renderLogPanel() string {
 	rightWidth := m.width - leftWidth
 	sqlCommandBarWidth := int(float64(rightWidth) * SQLCommandBarWidthRatio)
 	logPanelWidth := rightWidth - sqlCommandBarWidth
-	_, tableViewY := m.tableview.GetSize()
+	_, tableViewY := m.workspace.GetActiveTableViewSize()
+
+	tabBarHeight := workspace.TabBarHeight
 
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
 		Width(logPanelWidth + 4).
-		Height(m.height - tableViewY)
+		Height(m.height - tableViewY - tabBarHeight)
 
 	content := m.logPanel.RenderContent()
 	return borderStyle.Render(content)
@@ -476,23 +505,30 @@ func (m rootScreenModel) getContextKeyMap() combinedKeyMap {
 		global: m.keys,
 	}
 
+	// Tab keys are always available
+	tabKeys := workspace.DefaultKeyMap
+
 	switch m.focusedPane {
 	case FocusDBTree:
 		keys := dbtree.DefaultKeyMap
 		combined.paneKeys = keys.ShortHelp()
+		combined.paneKeys = append(combined.paneKeys, tabKeys.ShortHelp()...)
 		combined.fullPaneKeys = keys.FullHelp()
+		combined.fullPaneKeys = append(combined.fullPaneKeys, tabKeys.FullHelp()...)
 	case FocusTableView:
-		keys := tableview.DefaultKeyMap
-		combined.paneKeys = keys.ShortHelp()
-		combined.fullPaneKeys = keys.FullHelp()
+		// Combine tableview keys with tab navigation keys
+		combined.paneKeys = tabKeys.ShortHelp()
+		combined.fullPaneKeys = tabKeys.FullHelp()
 	case FocusSQLCommandBar:
-		keys := sqlcommandbar.DefaultKeyMap
-		combined.paneKeys = keys.ShortHelp()
-		combined.fullPaneKeys = keys.FullHelp()
+		// Combine sqlcommandbar keys with tab navigation keys
+		combined.paneKeys = tabKeys.ShortHelp()
+		combined.fullPaneKeys = tabKeys.FullHelp()
 	case FocusLogPanel:
 		keys := logpanel.DefaultKeyMap
 		combined.paneKeys = keys.ShortHelp()
+		combined.paneKeys = append(combined.paneKeys, tabKeys.ShortHelp()...)
 		combined.fullPaneKeys = keys.FullHelp()
+		combined.fullPaneKeys = append(combined.fullPaneKeys, tabKeys.FullHelp()...)
 	}
 
 	return combined

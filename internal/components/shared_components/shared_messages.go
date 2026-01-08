@@ -111,14 +111,15 @@ const (
 	TargetTableView
 	TargetDBTree
 	TargetLogPanel
+	TargetWorkspace
 )
 
 var MessageRoutes = map[string]ComponentTarget{
-	"sharedcomponents.ExecuteSQLTextMsg":    TargetSQLCommandBar,
+	"sharedcomponents.ExecuteSQLTextMsg":    TargetWorkspace,
 	"sharedcomponents.SQLResultMsg":         TargetTableView | TargetSQLCommandBar,
 	"sharedcomponents.OrderByChangeMsg":     TargetSQLCommandBar,
-	"sharedcomponents.OpenTableMsg":         TargetSQLCommandBar,
-	"sharedcomponents.ReapplyTableQueryMsg": TargetSQLCommandBar,
+	"sharedcomponents.OpenTableMsg":         TargetWorkspace,
+	"sharedcomponents.ReapplyTableQueryMsg": TargetWorkspace,
 	"sharedcomponents.TableLoadingMsg":      TargetTableView,
 	"sharedcomponents.AddLogMsg":            TargetLogPanel,
 }

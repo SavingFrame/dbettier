@@ -9,13 +9,12 @@ import (
 )
 
 type SQLCommandBarModel struct {
-	registry   *database.DBRegistry
-	textarea   textarea.Model
-	width      int
-	height     int
-	err        error
-	query      sharedcomponents.QueryCompiler
-	databaseID string
+	registry *database.DBRegistry
+	textarea textarea.Model
+	width    int
+	height   int
+	err      error
+	query    sharedcomponents.QueryCompiler
 }
 
 func SQLCommandBarScreen(registry *database.DBRegistry) SQLCommandBarModel {
@@ -63,4 +62,8 @@ func (m *SQLCommandBarModel) SetSize(width, height int) {
 	m.height = height
 	m.textarea.SetWidth(width - 2)
 	m.textarea.SetHeight(height - 1)
+}
+
+func (m *SQLCommandBarModel) SetText(text string) {
+	m.textarea.SetValue(text)
 }

@@ -43,12 +43,16 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.isLoading = true
 		return m, tea.Batch(cmds...)
 	case sharedcomponents.SQLResultMsg:
+		log.Printf("Received SQLResultMsg for TableViewModel: %+v", msg)
 		m.isLoading = false
 		result := m.data.SetFromSQLResult(msg)
 		columns, rows := m.data.BuildTableData(result)
 		m.table.SetRows(nil)
 		m.table.SetColumns(columns)
+		log.Println("Setting table rows")
 		m.table.SetRows(rows)
+		log.Println("TableViewModel update complete after SQLResultMsg")
+		log.Printf("Table has %d columns and %d rows", len(m.table.Columns()), len(m.table.Rows()))
 	case sharedcomponents.UpdateTableMsg:
 		m.isLoading = false
 		m.data.SetQuery(msg.Query)
