@@ -130,7 +130,7 @@ func (m DBTreeModel) renderSchema(t *tree.Tree, dbIdx, schemaIdx int, schema *da
 
 // renderTable adds a table node and recursively its columns
 func (m DBTreeModel) renderTable(t *tree.Tree, dbIdx, schemaIdx, tableIdx int, table *schemaTableNode) {
-	tableText := fmt.Sprintf(" %s", table.name)
+	tableText := fmt.Sprintf(" %s", table.name)
 	tableText = m.truncateText(tableText, m.viewport.Width()-14)
 	isFocused := m.tree.cursor.DbIndex() == dbIdx &&
 		m.tree.cursor.SchemaIndex() == schemaIdx &&

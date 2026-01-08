@@ -2,6 +2,8 @@
 
 A terminal user interface (TUI) for PostgreSQL database management, built with Go and Bubbletea.
 
+![dbettier screenshot](assets/app.png)
+
 ## Features
 
 - **Split-pane interface**: Database/table tree navigation on the left, content viewer on the right
