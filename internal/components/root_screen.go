@@ -12,6 +12,7 @@ import (
 	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/components/statusbar"
 	"github.com/SavingFrame/dbettier/internal/components/workspace"
 	"github.com/SavingFrame/dbettier/internal/database"
 	"github.com/SavingFrame/dbettier/internal/theme"
@@ -39,6 +40,7 @@ type rootScreenModel struct {
 	dbtree    dbtree.DBTreeModel
 	workspace workspace.Workspace
 	logPanel  logpanel.LogPanelModel
+	statusBar statusbar.StatusBarModel
 
 	// State
 	focusedPane  FocusedPane
@@ -56,6 +58,7 @@ func RootScreen(registry *database.DBRegistry) rootScreenModel {
 	// Initialize all components for split layout
 	return rootScreenModel{
 		dbtree:      dbtree.DBTreeScreen(registry),
+		statusBar:   statusbar.NewStatusBarModel(),
 		workspace:   workspace.New(registry),
 		logPanel:    logpanel.LogPanelScreen(),
 		focusedPane: FocusDBTree,
@@ -127,10 +130,11 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update help width for proper truncation
 		m.help.SetWidth(msg.Width)
 
-		// Reserve space for short help bar at bottom (1 line) and tab bar at top
+		// Reserve space for short help bar at bottom (1 line), status bar (1 line), and tab bar at top
 		helpHeight := 1
+		statusBarHeight := 1
 		tabBarHeight := workspace.TabBarHeight
-		availableHeight := m.height - helpHeight - tabBarHeight
+		availableHeight := m.height - helpHeight - statusBarHeight - tabBarHeight
 
 		// Calculate dimensions for each component
 		leftWidth := int(float64(m.width) * DBTreeWidthRatio)
@@ -146,8 +150,9 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Each border style will add 2 to width and 2 to height, so we subtract those
 		m.dbtree.SetSize(leftWidth-4, m.height-helpHeight-2)
 		m.workspace.SetSize(rightWidth, tabBarHeight)
-		m.workspace.SetTabSizes(rightWidth-4, tableViewHeight-2, sqlCommandBarWidth-4, bottomRowHeight+1)
+		m.workspace.SetTabSizes(rightWidth-4, tableViewHeight-2, sqlCommandBarWidth-4, bottomRowHeight+2)
 		m.logPanel.SetSize(logPanelWidth+4, bottomRowHeight-2) // TODO: Something weird with width here. if i add +4 it show more content?
+		m.statusBar.SetSize(m.width, 1)                        // Status bar is always 1 line tall
 		return m, nil
 
 	case tea.KeyMsg:
@@ -297,9 +302,10 @@ func (m rootScreenModel) View() tea.View {
 
 	baseView := m.renderSplitLayout()
 
-	// Render short help bar at the bottom (always visible)
+	// Render status bar and short help bar at the bottom (always visible)
+	statusBarView := m.statusBar.RenderContent()
 	shortHelpView := m.help.ShortHelpView(m.getContextKeyMap().ShortHelp())
-	fullView := lipgloss.JoinVertical(lipgloss.Left, baseView, shortHelpView)
+	fullView := lipgloss.JoinVertical(lipgloss.Left, baseView, statusBarView, shortHelpView)
 
 	// If full help is toggled, render it as a centered popup overlay
 	if m.help.ShowAll && m.width > 0 && m.height > 0 {
