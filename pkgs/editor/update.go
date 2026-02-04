@@ -58,6 +58,8 @@ func (m *SQLEditor) processInsertModeKey(msg tea.KeyMsg) tea.Cmd {
 		m.cursor.moveUp(1, m.buffer)
 	case key.Matches(msg, InsertModeKeymap.Down):
 		m.cursor.moveDown(1, m.buffer)
+	case key.Matches(msg, InsertModeKeymap.Backspace):
+		m.buffer.handleBackspace(m.cursor)
 	case len(msg.String()) == 1:
 		line := m.buffer.lines[m.cursor.row]
 		line = line[:m.cursor.col] + msg.String() + line[m.cursor.col:]

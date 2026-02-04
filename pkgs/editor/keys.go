@@ -9,6 +9,7 @@ type KeyMap struct {
 	Right            key.Binding
 	Up               key.Binding
 	Down             key.Binding
+	Backspace        key.Binding
 }
 
 var NormalModeKeymap = KeyMap{
@@ -58,6 +59,10 @@ var InsertModeKeymap = KeyMap{
 	Exit: key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc", "normal mode"),
+	),
+	Backspace: key.NewBinding(
+		key.WithKeys("backspace"),
+		key.WithHelp("backspace", "delete character"),
 	),
 }
 
