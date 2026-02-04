@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
-	sqlcommandbar "github.com/SavingFrame/dbettier/internal/components/sql_commandbar"
+	sqlcommandbarv2 "github.com/SavingFrame/dbettier/internal/components/sql_commandbar_v2"
 	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
 )
@@ -32,7 +32,7 @@ type Tab struct {
 	Name          string
 	Type          TabType
 	TableView     tableview.TableViewModel
-	SQLCommandBar sqlcommandbar.SQLCommandBarModel
+	SQLCommandBar sqlcommandbarv2.SQLCommandBarModel
 	DatabaseID    string
 }
 
@@ -86,7 +86,7 @@ func (w *Workspace) addQueryTab() {
 		Name:          fmt.Sprintf("Query %d", w.queryCounter),
 		Type:          TabTypeQuery,
 		TableView:     tableview.TableViewScreen(),
-		SQLCommandBar: sqlcommandbar.SQLCommandBarScreen(w.registry),
+		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry),
 	}
 	tab.TableView.SetSize(w.TableViewSize.width, w.TableViewSize.height)
 	tab.SQLCommandBar.SetSize(w.SQLCommandBarSize.width, w.SQLCommandBarSize.height)
@@ -102,7 +102,7 @@ func (w *Workspace) AddTableTab(tableName string, databaseID string) int {
 		Name:          tableName,
 		Type:          TabTypeTable,
 		TableView:     tableview.TableViewScreen(),
-		SQLCommandBar: sqlcommandbar.SQLCommandBarScreen(w.registry),
+		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry),
 	}
 	tab.TableView.SetSize(w.TableViewSize.width, w.TableViewSize.height)
 	tab.SQLCommandBar.SetSize(w.SQLCommandBarSize.width, w.SQLCommandBarSize.height)
@@ -212,10 +212,13 @@ func (w Workspace) Init() tea.Cmd {
 
 // InitialSQLCommand returns the initial SQL command for the first tab
 func (w Workspace) InitialSQLCommand() tea.Cmd {
-	if tab := w.ActiveTab(); tab != nil {
-		return tab.SQLCommandBar.InitialSQLCommand()
-	}
 	return nil
+	// TODO: Temperary disabled, we should move this logic from SQLCommandBar to Workspace
+
+	// if tab := w.ActiveTab(); tab != nil {
+	// 	return tab.SQLCommandBar.InitialSQLCommand()
+	// }
+	// return nil
 }
 
 // UpdateActiveTableView updates the active tab's tableview
@@ -233,7 +236,7 @@ func (w *Workspace) UpdateActiveTableView(msg tea.Msg) tea.Cmd {
 func (w *Workspace) UpdateActiveSQLCommandBar(msg tea.Msg) tea.Cmd {
 	if tab := w.ActiveTab(); tab != nil {
 		model, cmd := tab.SQLCommandBar.Update(msg)
-		tab.SQLCommandBar = model.(sqlcommandbar.SQLCommandBarModel)
+		tab.SQLCommandBar = model.(sqlcommandbarv2.SQLCommandBarModel)
 		return cmd
 	}
 	return nil

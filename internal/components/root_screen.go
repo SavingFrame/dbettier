@@ -146,7 +146,7 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Each border style will add 2 to width and 2 to height, so we subtract those
 		m.dbtree.SetSize(leftWidth-4, m.height-helpHeight-2)
 		m.workspace.SetSize(rightWidth, tabBarHeight)
-		m.workspace.SetTabSizes(rightWidth-4, tableViewHeight-2, sqlCommandBarWidth-4, bottomRowHeight)
+		m.workspace.SetTabSizes(rightWidth-4, tableViewHeight-2, sqlCommandBarWidth-4, bottomRowHeight+1)
 		m.logPanel.SetSize(logPanelWidth+4, bottomRowHeight-2) // TODO: Something weird with width here. if i add +4 it show more content?
 		return m, nil
 
