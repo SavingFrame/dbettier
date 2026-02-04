@@ -1,8 +1,6 @@
 package statusbar
 
 import (
-	"log"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
@@ -46,11 +44,10 @@ func statusTextStyle() lipgloss.Style {
 
 func (s StatusBarModel) RenderContent() string {
 	encoding := encodingStyle().Render("UTF-8")
-	status := statusStyle().Render("STATUS")
+	status := statusStyle().Render(s.editorStatus)
 	mode := statusTextStyle().Render("NORMAL")
 	bar := lipgloss.JoinHorizontal(lipgloss.Top, encoding, status, mode)
 
-	log.Println("Rendering status bar with width:", s.width, "height:", s.height)
 	return statusBarStyle().Width(s.width).Height(s.height).Render(bar)
 }
 

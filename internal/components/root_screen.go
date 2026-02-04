@@ -292,6 +292,13 @@ func (m *rootScreenModel) routeToComponents(msg tea.Msg) []tea.Cmd {
 		}
 	}
 
+	if targets&sharedcomponents.TargetStatusBar != 0 {
+		var statusBarModel tea.Model
+		statusBarModel, cmd = m.statusBar.Update(msg)
+		m.statusBar = statusBarModel.(statusbar.StatusBarModel)
+		cmds = append(cmds, cmd)
+	}
+
 	return cmds
 }
 

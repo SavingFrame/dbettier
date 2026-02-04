@@ -8,16 +8,16 @@ import (
 	"github.com/SavingFrame/dbettier/internal/database"
 )
 
-type editorMode int
+type EditorMode int
 
 const (
-	editorModeNormal editorMode = iota
-	editorModeInsert
+	EditorModeNormal EditorMode = iota
+	EditorModeInsert
 )
 
 type SQLEditor struct {
 	viewport viewport.Model
-	mode     editorMode
+	mode     EditorMode
 	buffer   *buffer
 	cursor   *editorCursor
 
@@ -32,7 +32,7 @@ func NewEditorModel(lines []string) SQLEditor {
 
 	m := SQLEditor{
 		viewport: viewport.New(),
-		mode:     editorModeNormal,
+		mode:     EditorModeNormal,
 		buffer:   &buffer{lines: lines},
 		cursor:   newEditorCursor(0, 0),
 	}
@@ -68,4 +68,8 @@ func (m *SQLEditor) SetContent(c string) {
 	contentLines := strings.Split(c, "\n")
 	m.buffer.lines = contentLines
 	m.cursor.moveLastSymbol(m.buffer.lines)
+}
+
+func (m *SQLEditor) Mode() EditorMode {
+	return m.mode
 }

@@ -112,6 +112,7 @@ const (
 	TargetDBTree
 	TargetLogPanel
 	TargetWorkspace
+	TargetStatusBar
 )
 
 var MessageRoutes = map[string]ComponentTarget{
@@ -122,6 +123,7 @@ var MessageRoutes = map[string]ComponentTarget{
 	"sharedcomponents.ReapplyTableQueryMsg": TargetWorkspace,
 	"sharedcomponents.TableLoadingMsg":      TargetTableView,
 	"sharedcomponents.AddLogMsg":            TargetLogPanel,
+	"statusbar.UpdateStatusBarMsg":          TargetStatusBar,
 }
 
 func GetMessageType(msg tea.Msg) string {

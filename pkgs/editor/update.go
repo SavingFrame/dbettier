@@ -11,9 +11,9 @@ func (m SQLEditor) Update(msg tea.Msg) (SQLEditor, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if m.mode == editorModeNormal {
+		if m.mode == EditorModeNormal {
 			m.processNormalModeKey(msg)
-		} else if m.mode == editorModeInsert {
+		} else if m.mode == EditorModeInsert {
 			m.processInsertModeKey(msg)
 		}
 	}
@@ -38,7 +38,7 @@ func (m *SQLEditor) processNormalModeKey(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, NormalModeKeymap.Down):
 		m.cursor.moveDown(1, m.buffer)
 	case key.Matches(msg, NormalModeKeymap.EnableInsertMode):
-		m.mode = editorModeInsert
+		m.mode = EditorModeInsert
 	case key.Matches(msg, NormalModeKeymap.Exit):
 		cmd = tea.Quit
 	}
@@ -49,7 +49,7 @@ func (m *SQLEditor) processInsertModeKey(msg tea.KeyMsg) tea.Cmd {
 	var cmd tea.Cmd
 	switch {
 	case key.Matches(msg, InsertModeKeymap.Exit):
-		m.mode = editorModeNormal
+		m.mode = EditorModeNormal
 	case key.Matches(msg, InsertModeKeymap.Left):
 		m.cursor.moveLeft(1)
 	case key.Matches(msg, InsertModeKeymap.Right):
