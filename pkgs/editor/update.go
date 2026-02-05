@@ -46,6 +46,21 @@ func (m *SQLEditor) processNormalModeKey(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, NormalModeKeymap.EnableInsertMode):
 		m.mode = EditorModeInsert
 		cmd = func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
+	case key.Matches(msg, NormalModeKeymap.InsertNextChar):
+		m.cursor.moveRight(1, m.buffer)
+		m.mode = EditorModeInsert
+		moveCmd := func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
+		modeCmd := func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
+		cmd = tea.Batch(moveCmd, modeCmd)
+	case key.Matches(msg, NormalModeKeymap.InsertNewLine):
+		if m.cursor.row+1 == len(m.buffer.lines) {
+			m.buffer.lines = append(m.buffer.lines, "")
+		}
+		m.cursor.setPosition(m.cursor.row+1, 0)
+		m.mode = EditorModeInsert
+		moveCmd := func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
+		modeCmd := func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
+		cmd = tea.Batch(moveCmd, modeCmd)
 	case key.Matches(msg, NormalModeKeymap.Exit):
 		cmd = tea.Quit
 	}

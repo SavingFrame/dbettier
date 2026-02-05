@@ -11,7 +11,7 @@ func (s StatusBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case editor.EditorCursorMovedMsg:
-		cursorPos := fmt.Sprintf("%d:%d", msg.Row, msg.Col)
+		cursorPos := fmt.Sprintf("%d:%d", msg.Row+1, msg.Col+1)
 		s.editorCursorPos = cursorPos
 	case editor.EditorModeChangedMsg:
 		switch msg.Mode {

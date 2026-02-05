@@ -5,6 +5,8 @@ import "charm.land/bubbles/v2/key"
 type KeyMap struct {
 	Exit             key.Binding
 	EnableInsertMode key.Binding
+	InsertNextChar   key.Binding
+	InsertNewLine    key.Binding
 	Left             key.Binding
 	Right            key.Binding
 	Up               key.Binding
@@ -20,6 +22,12 @@ var NormalModeKeymap = KeyMap{
 	EnableInsertMode: key.NewBinding(
 		key.WithKeys("i"),
 		key.WithHelp("i", "insert mode"),
+	),
+	InsertNextChar: key.NewBinding(
+		key.WithKeys("a"),
+	),
+	InsertNewLine: key.NewBinding(
+		key.WithKeys("o"),
 	),
 	Left: key.NewBinding(
 		key.WithKeys("h", "left"),

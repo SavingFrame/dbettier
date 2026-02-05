@@ -9,8 +9,8 @@ type StatusBarModel struct {
 
 func NewStatusBarModel() StatusBarModel {
 	return StatusBarModel{
-		editorMode:      "Normal",
-		editorCursorPos: "0:0",
+		editorMode:      "NORMAL",
+		editorCursorPos: "1:1",
 	}
 }
 
