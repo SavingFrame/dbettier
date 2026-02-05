@@ -43,16 +43,16 @@ func (m *SQLEditor) processNormalModeKey(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, NormalModeKeymap.Down):
 		m.cursor.moveDown(1, m.buffer)
 		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
-	case key.Matches(msg, NormalModeKeymap.EnableInsertMode):
+	case key.Matches(msg, NormalModeKeymap.EnableInsertMode) && !m.readonly:
 		m.mode = EditorModeInsert
 		cmd = func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
-	case key.Matches(msg, NormalModeKeymap.InsertNextChar):
+	case key.Matches(msg, NormalModeKeymap.InsertNextChar) && !m.readonly:
 		m.cursor.moveRight(1, m.buffer)
 		m.mode = EditorModeInsert
 		moveCmd := func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 		modeCmd := func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
 		cmd = tea.Batch(moveCmd, modeCmd)
-	case key.Matches(msg, NormalModeKeymap.InsertNewLine):
+	case key.Matches(msg, NormalModeKeymap.InsertNewLine) && !m.readonly:
 		if m.cursor.row+1 == len(m.buffer.lines) {
 			m.buffer.lines = append(m.buffer.lines, "")
 		}
@@ -85,14 +85,14 @@ func (m *SQLEditor) processInsertModeKey(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, InsertModeKeymap.Down):
 		m.cursor.moveDown(1, m.buffer)
 		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
-	case key.Matches(msg, InsertModeKeymap.Backspace):
+	case key.Matches(msg, InsertModeKeymap.Backspace) && !m.IsReadonly():
 		m.buffer.handleBackspace(m.cursor)
 		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
-	case len(msg.String()) == 1:
-		line := m.buffer.lines[m.cursor.row]
-		line = line[:m.cursor.col] + msg.String() + line[m.cursor.col:]
-		m.buffer.lines[m.cursor.row] = line
-		m.cursor.moveRight(1, m.buffer)
+	case key.Matches(msg, InsertModeKeymap.Space) && !m.IsReadonly():
+		m.buffer.handleSpace(m.cursor)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
+	case len(msg.String()) == 1 && !m.IsReadonly():
+		m.buffer.handleCharacterInput(m.cursor, msg.String())
 		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	}
 	return cmd

@@ -20,12 +20,13 @@ type SQLEditor struct {
 	mode     EditorMode
 	buffer   *buffer
 	cursor   *editorCursor
+	readonly bool
 
 	registry *database.DBRegistry
 	ready    bool
 }
 
-func NewEditorModel(lines []string) SQLEditor {
+func NewEditorModel(lines []string, readonly bool) SQLEditor {
 	if lines == nil {
 		lines = []string{"This is a simple text editor.", "", "Start typing..."}
 	}
@@ -35,6 +36,7 @@ func NewEditorModel(lines []string) SQLEditor {
 		mode:     EditorModeNormal,
 		buffer:   &buffer{lines: lines},
 		cursor:   newEditorCursor(0, 0),
+		readonly: readonly,
 	}
 
 	return m
@@ -70,6 +72,22 @@ func (m *SQLEditor) SetContent(c string) {
 	m.cursor.moveLastSymbol(m.buffer.lines)
 }
 
+func (m *SQLEditor) GetContent() string {
+	return strings.Join(m.buffer.lines, "\n")
+}
+
 func (m *SQLEditor) Mode() EditorMode {
 	return m.mode
+}
+
+func (m *SQLEditor) IsNormalMode() bool {
+	return m.mode == EditorModeNormal
+}
+
+func (m *SQLEditor) SetReadonly(v bool) {
+	m.readonly = v
+}
+
+func (m *SQLEditor) IsReadonly() bool {
+	return m.readonly
 }

@@ -12,6 +12,8 @@ type KeyMap struct {
 	Up               key.Binding
 	Down             key.Binding
 	Backspace        key.Binding
+	Execute          key.Binding
+	Space            key.Binding
 }
 
 var NormalModeKeymap = KeyMap{
@@ -50,19 +52,15 @@ var NormalModeKeymap = KeyMap{
 var InsertModeKeymap = KeyMap{
 	Left: key.NewBinding(
 		key.WithKeys("left"),
-		key.WithHelp("left", "move left"),
 	),
 	Right: key.NewBinding(
 		key.WithKeys("right"),
-		key.WithHelp("right", "move right"),
 	),
 	Up: key.NewBinding(
 		key.WithKeys("up"),
-		key.WithHelp("up", "move up"),
 	),
 	Down: key.NewBinding(
 		key.WithKeys("down"),
-		key.WithHelp("down", "move down"),
 	),
 	Exit: key.NewBinding(
 		key.WithKeys("esc"),
@@ -70,7 +68,9 @@ var InsertModeKeymap = KeyMap{
 	),
 	Backspace: key.NewBinding(
 		key.WithKeys("backspace"),
-		key.WithHelp("backspace", "delete character"),
+	),
+	Space: key.NewBinding(
+		key.WithKeys("space"),
 	),
 }
 

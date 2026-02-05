@@ -3,6 +3,7 @@ package editor
 import (
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -53,9 +54,10 @@ func (m SQLEditor) View() string {
 			right = ansi.Cut(line, cursorCol+1, lineWidth)
 		}
 
-		// Keep the cell's syntax colors; only apply reverse video when the cursor is visible.
+		// Keep the cell's syntax colors; only apply reverse video when the cursor is visible
+		// and the editor is not readonly.
 		cursorCell := cell
-		if !m.cursor.virtualCursor.IsBlinked {
+		if !m.cursor.virtualCursor.IsBlinked && !m.readonly {
 			reverseOn := ansi.Style{}.Reverse(true).String()
 			reverseOff := ansi.Style{}.Reverse(false).String()
 			cursorCell = reverseOn + cell + reverseOff
@@ -65,6 +67,21 @@ func (m SQLEditor) View() string {
 		}
 
 		lines[m.cursor.row] = left + cursorCell + right
+	}
+
+	// Overlay [RO] badge on the first line when readonly.
+	if m.readonly && len(lines) > 0 {
+		badge := lipgloss.NewStyle().Faint(true).Render("[RO]")
+		lineWidth := ansi.StringWidth(lines[0])
+		vpWidth := m.viewport.Width()
+		badgeWidth := ansi.StringWidth(badge)
+		if vpWidth > badgeWidth && vpWidth > lineWidth {
+			padding := vpWidth - lineWidth - badgeWidth
+			if padding < 1 {
+				padding = 1
+			}
+			lines[0] = lines[0] + strings.Repeat(" ", padding) + badge
+		}
 	}
 
 	// Reassemble and render through the viewport.
