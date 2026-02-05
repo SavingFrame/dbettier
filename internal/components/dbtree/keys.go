@@ -16,6 +16,7 @@ type KeyMap struct {
 	ScrollDown      key.Binding
 	Enter           key.Binding
 	Quit            key.Binding
+	OpenCommandBar  key.Binding
 }
 
 // DefaultKeyMap returns the default keybindings for the database tree
@@ -67,6 +68,10 @@ var DefaultKeyMap = KeyMap{
 	SearchPrevMatch: key.NewBinding(
 		key.WithKeys("N"),
 		key.WithHelp("N", "previous match"),
+	),
+	OpenCommandBar: key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "open command bar"),
 	),
 }
 

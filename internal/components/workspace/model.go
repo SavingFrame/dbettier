@@ -74,19 +74,19 @@ func New(registry *database.DBRegistry) Workspace {
 		scrollOffset: 0,
 	}
 	// Create initial query tab
-	m.addQueryTab()
+	// m.addQueryTab()
 	return m
 }
 
-// addQueryTab creates a new query tab
-func (w *Workspace) addQueryTab() {
+// AddQueryTab creates a new query tab
+func (w *Workspace) AddQueryTab(databaseID string) {
 	w.queryCounter++
 	tab := Tab{
 		ID:            fmt.Sprintf("query-%d", w.queryCounter),
 		Name:          fmt.Sprintf("Query %d", w.queryCounter),
 		Type:          TabTypeQuery,
 		TableView:     tableview.TableViewScreen(),
-		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry),
+		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry, databaseID, false), // TODO: Fix this shit
 	}
 	tab.TableView.SetSize(w.TableViewSize.width, w.TableViewSize.height)
 	tab.SQLCommandBar.SetSize(w.SQLCommandBarSize.width, w.SQLCommandBarSize.height)
@@ -102,7 +102,7 @@ func (w *Workspace) AddTableTab(tableName string, databaseID string) int {
 		Name:          tableName,
 		Type:          TabTypeTable,
 		TableView:     tableview.TableViewScreen(),
-		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry),
+		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry, databaseID, true),
 	}
 	tab.TableView.SetSize(w.TableViewSize.width, w.TableViewSize.height)
 	tab.SQLCommandBar.SetSize(w.SQLCommandBarSize.width, w.SQLCommandBarSize.height)
@@ -166,7 +166,7 @@ func (w *Workspace) CloseTab(index int) {
 	// Adjust active index if needed
 	if len(w.tabs) == 0 {
 		// Create a new query tab if all tabs are closed
-		w.addQueryTab()
+		// w.addQueryTab()
 		return
 	}
 

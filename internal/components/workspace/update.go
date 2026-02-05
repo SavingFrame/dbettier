@@ -73,12 +73,16 @@ func (w Workspace) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case sharedcomponents.OpenTableMsg:
 		w.AddTableTab(msg.Table.Name, msg.DatabaseID)
-		t := w.ActiveTab()
-		t.DatabaseID = msg.DatabaseID
 		return w, tea.Batch(
 			func() tea.Msg { return sharedcomponents.TableLoadingMsg{} },
 			openTableHandler(w.registry, msg.Table, msg.DatabaseID),
 		)
+
+	case OpenQueryTabMsg:
+		log.Printf("Opening query tab for database ID %s with query: %s\n", msg.DatabaseID, msg.Query.Compile())
+		w.AddQueryTab(msg.DatabaseID)
+		t := w.ActiveTab()
+		t.SQLCommandBar.SetContent(msg.Query.Compile())
 	}
 
 	return w, tea.Batch(cmds...)

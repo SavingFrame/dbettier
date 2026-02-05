@@ -9,13 +9,15 @@ import (
 type SQLCommandBarModel struct {
 	editor editor.SQLEditor
 
-	registry *database.DBRegistry
+	registry   *database.DBRegistry
+	DatabaseID string
 }
 
-func NewSQLCommandBarModel(lines []string, registry *database.DBRegistry) SQLCommandBarModel {
+func NewSQLCommandBarModel(lines []string, registry *database.DBRegistry, databaseID string, readonly bool) SQLCommandBarModel {
 	return SQLCommandBarModel{
-		editor:   editor.NewEditorModel(lines),
-		registry: registry,
+		editor:     editor.NewEditorModel(lines, readonly),
+		registry:   registry,
+		DatabaseID: databaseID,
 	}
 }
 
@@ -29,4 +31,8 @@ func (m *SQLCommandBarModel) Focus() tea.Cmd {
 
 func (m *SQLCommandBarModel) Blur() tea.Cmd {
 	return m.editor.Blur()
+}
+
+func (m *SQLCommandBarModel) SetContent(content string) {
+	m.editor.SetContent(content)
 }

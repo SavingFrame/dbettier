@@ -125,6 +125,7 @@ var MessageRoutes = map[string]ComponentTarget{
 	"sharedcomponents.AddLogMsg":            TargetLogPanel,
 	"editor.EditorModeChangedMsg":           TargetStatusBar,
 	"editor.EditorCursorMovedMsg":           TargetStatusBar,
+	"workspace.OpenQueryTabMsg":             TargetWorkspace,
 }
 
 func GetMessageType(msg tea.Msg) string {

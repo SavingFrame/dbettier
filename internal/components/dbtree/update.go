@@ -9,6 +9,7 @@ import (
 	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/components/workspace"
 	"github.com/SavingFrame/dbettier/internal/database"
 )
 
@@ -98,6 +99,20 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.search.Matches()) > 0 {
 				m.search.PrevMatch(m.tree.cursor)
 				m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
+			}
+		case key.Matches(msg, DefaultKeyMap.OpenCommandBar):
+			log.Printf("Open command bar key pressed in DBTree")
+
+			q := ""
+			if m.tree.cursor.Level() == TableLevel {
+				t := m.tree.CurrentTable().name
+				q = fmt.Sprintf("SELECT * FROM \"%s\" LIMIT 500;", t)
+			}
+			return m, func() tea.Msg {
+				return workspace.OpenQueryTabMsg{
+					Query:      sharedcomponents.NewBasicSQLQuery(q),
+					DatabaseID: m.tree.CurrentDatabase().id,
+				}
 			}
 
 		case key.Matches(msg, DefaultKeyMap.Quit):
