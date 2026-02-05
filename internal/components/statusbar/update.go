@@ -1,17 +1,27 @@
 package statusbar
 
 import (
-	"log"
+	"fmt"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/SavingFrame/dbettier/pkgs/editor"
 )
 
 func (s StatusBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case UpdateStatusBarMsg:
-		cmd := s.handleUpdateStatusBar(msg)
-		cmds = append(cmds, cmd)
+	case editor.EditorCursorMovedMsg:
+		cursorPos := fmt.Sprintf("%d:%d", msg.Row, msg.Col)
+		s.editorCursorPos = cursorPos
+	case editor.EditorModeChangedMsg:
+		switch msg.Mode {
+		case editor.EditorModeInsert:
+			s.editorMode = "INSERT"
+		case editor.EditorModeNormal:
+			s.editorMode = "NORMAL"
+		default:
+			s.editorMode = "UNKNOWN"
+		}
 	}
 	return s, tea.Batch(cmds...)
 }
@@ -19,13 +29,4 @@ func (s StatusBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 type UpdateStatusBarMsg struct {
 	component string
 	message   string
-}
-
-func (s *StatusBarModel) handleUpdateStatusBar(msg UpdateStatusBarMsg) tea.Cmd {
-	log.Printf("Updating status bar: component=%s, message=%s", msg.component, msg.message)
-	switch msg.component {
-	case "editorStatus":
-		s.editorStatus = msg.message
-	}
-	return nil
 }

@@ -43,10 +43,11 @@ func statusTextStyle() lipgloss.Style {
 }
 
 func (s StatusBarModel) RenderContent() string {
-	encoding := encodingStyle().Render("UTF-8")
-	status := statusStyle().Render(s.editorStatus)
-	mode := statusTextStyle().Render("NORMAL")
-	bar := lipgloss.JoinHorizontal(lipgloss.Top, encoding, status, mode)
+	w := lipgloss.Width
+	mode := statusStyle().Render(s.editorMode)
+	editorCursorPos := statusStyle().Render(s.editorCursorPos)
+	encoding := statusTextStyle().Width(s.width - w(editorCursorPos) - w(mode)).Render("UTF-8")
+	bar := lipgloss.JoinHorizontal(lipgloss.Top, mode, encoding, editorCursorPos)
 
 	return statusBarStyle().Width(s.width).Height(s.height).Render(bar)
 }

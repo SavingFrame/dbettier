@@ -12,9 +12,11 @@ func (m SQLEditor) Update(msg tea.Msg) (SQLEditor, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if m.mode == EditorModeNormal {
-			m.processNormalModeKey(msg)
+			cmd = m.processNormalModeKey(msg)
+			cmds = append(cmds, cmd)
 		} else if m.mode == EditorModeInsert {
-			m.processInsertModeKey(msg)
+			cmd = m.processInsertModeKey(msg)
+			cmds = append(cmds, cmd)
 		}
 	}
 
@@ -31,14 +33,19 @@ func (m *SQLEditor) processNormalModeKey(msg tea.KeyMsg) tea.Cmd {
 	switch {
 	case key.Matches(msg, NormalModeKeymap.Left):
 		m.cursor.moveLeft(1)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, NormalModeKeymap.Right):
 		m.cursor.moveRight(1, m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, NormalModeKeymap.Up):
 		m.cursor.moveUp(1, m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, NormalModeKeymap.Down):
 		m.cursor.moveDown(1, m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, NormalModeKeymap.EnableInsertMode):
 		m.mode = EditorModeInsert
+		cmd = func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
 	case key.Matches(msg, NormalModeKeymap.Exit):
 		cmd = tea.Quit
 	}
@@ -50,21 +57,28 @@ func (m *SQLEditor) processInsertModeKey(msg tea.KeyMsg) tea.Cmd {
 	switch {
 	case key.Matches(msg, InsertModeKeymap.Exit):
 		m.mode = EditorModeNormal
+		cmd = func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
 	case key.Matches(msg, InsertModeKeymap.Left):
 		m.cursor.moveLeft(1)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, InsertModeKeymap.Right):
 		m.cursor.moveRight(1, m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, InsertModeKeymap.Up):
 		m.cursor.moveUp(1, m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, InsertModeKeymap.Down):
 		m.cursor.moveDown(1, m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, InsertModeKeymap.Backspace):
 		m.buffer.handleBackspace(m.cursor)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case len(msg.String()) == 1:
 		line := m.buffer.lines[m.cursor.row]
 		line = line[:m.cursor.col] + msg.String() + line[m.cursor.col:]
 		m.buffer.lines[m.cursor.row] = line
 		m.cursor.moveRight(1, m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	}
 	return cmd
 }
