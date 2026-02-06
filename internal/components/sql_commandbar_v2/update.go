@@ -3,8 +3,8 @@ package sqlcommandbarv2
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/messages"
+	"github.com/SavingFrame/dbettier/internal/query"
 )
 
 func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -22,7 +22,7 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
-	case sharedcomponents.SQLResultMsg:
+	case query.SQLResultMsg:
 		m.SetContent(msg.Query.Compile())
 	}
 	m.editor, cmd = m.editor.Update(msg)

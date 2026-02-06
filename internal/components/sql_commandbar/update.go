@@ -3,7 +3,7 @@ package sqlcommandbar
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/query"
 )
 
 // KeyMap defines keybindings for the SQL command bar component
@@ -44,7 +44,7 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 
-	case sharedcomponents.SQLResultMsg:
+	case query.SQLResultMsg:
 		m.textarea.SetValue(msg.Query.Compile())
 		m.query = msg.Query
 		return m, nil

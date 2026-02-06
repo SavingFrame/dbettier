@@ -1,5 +1,4 @@
-// Package sharedcomponents provides common types and utilities shared across UI components.
-package sharedcomponents
+package query
 
 import (
 	"log"
@@ -21,10 +20,6 @@ func NewBasicSQLQuery(query string) *BasicSQLQuery {
 		Query:       query,
 		localOffset: 0,
 	}
-}
-
-type UpdateTableMsg struct {
-	Query QueryCompiler
 }
 
 func (q *BasicSQLQuery) Compile() string {

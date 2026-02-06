@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/query"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -16,12 +16,12 @@ const (
 
 // DataState manages query results and table data
 type DataState struct {
-	query         sharedcomponents.QueryCompiler
+	query         query.ExecutableQuery
 	databaseID    string
 	canFetchTotal bool
 }
 
-func (d *DataState) Query() sharedcomponents.QueryCompiler {
+func (d *DataState) Query() query.ExecutableQuery {
 	return d.query
 }
 
@@ -58,24 +58,24 @@ func (d *DataState) PageOffset() int {
 	return d.query.PageOffset()
 }
 
-func (d *DataState) GetSortOrders() sharedcomponents.OrderByClauses {
+func (d *DataState) GetSortOrders() query.OrderByClauses {
 	if d.query == nil {
 		return nil
 	}
 	return d.query.GetSortOrders()
 }
 
-func (d *DataState) SetFromSQLResult(msg sharedcomponents.SQLResultMsg) *sharedcomponents.SQLResult {
+func (d *DataState) SetFromSQLResult(msg query.SQLResultMsg) *query.SQLResult {
 	d.query = msg.Query
 	d.databaseID = msg.DatabaseID
 	return msg.Query.SetSQLResult(&msg)
 }
 
-func (d *DataState) SetQuery(query sharedcomponents.QueryCompiler) {
+func (d *DataState) SetQuery(query query.ExecutableQuery) {
 	d.query = query
 }
 
-func (d *DataState) BuildTableData(result *sharedcomponents.SQLResult) ([]table.Column, []table.Row) {
+func (d *DataState) BuildTableData(result *query.SQLResult) ([]table.Column, []table.Row) {
 	if result == nil || d.query == nil {
 		return nil, nil
 	}
@@ -130,15 +130,15 @@ func formatCellValue(cell any) string {
 	}
 }
 
-func (d *DataState) HandleSortChange(columns []table.Column, sortOrders []table.OrderCol) sharedcomponents.OrderByClauses {
-	var orderByClauses sharedcomponents.OrderByClauses
+func (d *DataState) HandleSortChange(columns []table.Column, sortOrders []table.OrderCol) query.OrderByClauses {
+	var orderByClauses query.OrderByClauses
 
 	for _, sort := range sortOrders {
 		if sort.ColumnIndex < 0 || sort.ColumnIndex >= len(columns) {
 			continue
 		}
 
-		orderByClauses = append(orderByClauses, sharedcomponents.OrderByClause{
+		orderByClauses = append(orderByClauses, query.OrderByClause{
 			ColumnName: columns[sort.ColumnIndex].Title,
 			Direction:  sort.Direction.String(),
 		})
@@ -149,7 +149,7 @@ func (d *DataState) HandleSortChange(columns []table.Column, sortOrders []table.
 
 func (d *DataState) RefreshQuery() tea.Cmd {
 	return func() tea.Msg {
-		return sharedcomponents.ReapplyTableQueryMsg{
+		return query.ReapplyTableQueryMsg{
 			Query: d.query,
 		}
 	}
@@ -157,6 +157,6 @@ func (d *DataState) RefreshQuery() tea.Cmd {
 
 // IsTableQuery returns true if the current query is a TableQuery (vs BasicQuery)
 func (d *DataState) IsTableQuery() bool {
-	_, ok := d.query.(*sharedcomponents.TableQuery)
+	_, ok := d.query.(*query.TableQuery)
 	return ok
 }

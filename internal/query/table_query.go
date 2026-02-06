@@ -1,4 +1,4 @@
-package sharedcomponents
+package query
 
 import (
 	"fmt"
@@ -22,10 +22,6 @@ func NewTableQuery(baseQuery string, limit int) *TableQuery {
 		Limit:     limit + 1,
 		Offset:    0,
 	}
-}
-
-type ReapplyTableQueryMsg struct {
-	Query QueryCompiler
 }
 
 func (q *TableQuery) Compile() string {

@@ -8,9 +8,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
 	"github.com/SavingFrame/dbettier/internal/messages"
+	"github.com/SavingFrame/dbettier/internal/query"
 )
 
 func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -23,12 +23,12 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		dbName := m.tree.CurrentDatabase().name
 		if msg.err != nil {
 			logMsg := fmt.Sprintf("[%s] Error loading schemas: %v", dbName, msg.err)
-			return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogError), notifications.ShowError(logMsg))
+			return m, tea.Batch(logpanel.AddLogCmd(logMsg, messages.LogError), notifications.ShowError(logMsg))
 		}
 		m.tree.SetSchemas(msg.schemas)
 		m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
 		logMsg := fmt.Sprintf("[%s] Schemas loaded for database.", dbName)
-		return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogSuccess), notifications.ShowSuccess(logMsg))
+		return m, tea.Batch(logpanel.AddLogCmd(logMsg, messages.LogSuccess), notifications.ShowSuccess(logMsg))
 	case handleSchemaSelectionResult:
 		m.tree.SetTables(msg.tables)
 		m.viewport.AdjustScrollToCursor(m.tree.cursor.VisualLine(&m.tree))
@@ -37,15 +37,15 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		dbName := m.tree.CurrentDatabase().name
 		if msg.err != nil {
 			logMsg := fmt.Sprintf("[%s] Error loading table columns: %v", dbName, msg.err)
-			return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogError), notifications.ShowError(logMsg))
+			return m, tea.Batch(logpanel.AddLogCmd(logMsg, messages.LogError), notifications.ShowError(logMsg))
 		}
 		err := m.tree.SetColumns(msg.databaseID, msg.schemaName, msg.columns)
 		if err != nil {
 			logMsg := fmt.Sprintf("[%s] Error loading table columns: %v", dbName, err)
-			return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogError), notifications.ShowError(logMsg))
+			return m, tea.Batch(logpanel.AddLogCmd(logMsg, messages.LogError), notifications.ShowError(logMsg))
 		}
 		logMsg := fmt.Sprintf("[%s] Table columns loaded for schema %s.", dbName, msg.schemaName)
-		return m, tea.Batch(logpanel.AddLogCmd(logMsg, sharedcomponents.LogSuccess), notifications.ShowSuccess(logMsg))
+		return m, tea.Batch(logpanel.AddLogCmd(logMsg, messages.LogSuccess), notifications.ShowSuccess(logMsg))
 
 	case tea.KeyMsg:
 		// Handle search mode input
@@ -110,7 +110,7 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, func() tea.Msg {
 				return messages.OpenQueryTabMsg{
-					Query:      sharedcomponents.NewBasicSQLQuery(q),
+					Query:      query.NewBasicSQLQuery(q),
 					DatabaseID: m.tree.CurrentDatabase().id,
 				}
 			}

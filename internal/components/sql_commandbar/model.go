@@ -4,9 +4,9 @@ package sqlcommandbar
 import (
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
 	"github.com/SavingFrame/dbettier/internal/messages"
+	"github.com/SavingFrame/dbettier/internal/query"
 )
 
 type SQLCommandBarModel struct {
@@ -15,7 +15,7 @@ type SQLCommandBarModel struct {
 	width    int
 	height   int
 	err      error
-	query    sharedcomponents.QueryCompiler
+	query    query.ExecutableQuery
 }
 
 func SQLCommandBarScreen(registry *database.DBRegistry) SQLCommandBarModel {

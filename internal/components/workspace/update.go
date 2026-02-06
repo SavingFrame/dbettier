@@ -12,9 +12,9 @@ import (
 	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
-	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
 	"github.com/SavingFrame/dbettier/internal/messages"
+	"github.com/SavingFrame/dbettier/internal/query"
 	zone "github.com/lrstanley/bubblezone/v2"
 )
 
@@ -61,13 +61,13 @@ func (w Workspace) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case messages.ExecuteSQLTextMsg:
 		t := w.ActiveTab()
 		t.DatabaseID = msg.DatabaseID
-		q := sharedcomponents.NewBasicSQLQuery(msg.Query)
+		q := query.NewBasicSQLQuery(msg.Query)
 		return w, tea.Batch(
 			func() tea.Msg { return messages.TableLoadingMsg{} },
 			executeSQLQuery(w.registry, q, msg.DatabaseID),
 		)
 
-	case sharedcomponents.ReapplyTableQueryMsg:
+	case query.ReapplyTableQueryMsg:
 		return w, tea.Batch(
 			func() tea.Msg { return messages.TableLoadingMsg{} },
 			executeSQLQuery(w.registry, msg.Query, w.ActiveTab().DatabaseID),
@@ -177,12 +177,12 @@ func FindTabByZone(zoneID string) (int, bool) {
 
 // TODO: Refactor this all this below:
 
-func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, databaseID string) tea.Cmd {
+func executeSQLQuery(r *database.DBRegistry, q query.ExecutableQuery, databaseID string) tea.Cmd {
 	return func() tea.Msg {
 		db := r.GetByID(databaseID)
 		if db == nil {
 			return tea.BatchMsg{
-				logpanel.AddLogCmd("Database with ID "+databaseID+" not found", sharedcomponents.LogError),
+				logpanel.AddLogCmd("Database with ID "+databaseID+" not found", messages.LogError),
 				notifications.ShowError("Database with ID " + databaseID + " not found"),
 			}
 		}
@@ -192,7 +192,7 @@ func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, d
 			err := db.Connect()
 			if err != nil {
 				return tea.BatchMsg{
-					logpanel.AddLogCmd("Failed to connect to database: "+err.Error(), sharedcomponents.LogError),
+					logpanel.AddLogCmd("Failed to connect to database: "+err.Error(), messages.LogError),
 					notifications.ShowError("Failed to connect to database: " + err.Error()),
 				}
 			}
@@ -207,8 +207,8 @@ func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, d
 		if err != nil {
 			log.Printf("Failed to execute query %s", err.Error())
 			return tea.BatchMsg{
-				logpanel.AddLogCmd(compiledQuery, sharedcomponents.LogSQL),
-				logpanel.AddLogCmd("Failed to execute query: "+err.Error(), sharedcomponents.LogError),
+				logpanel.AddLogCmd(compiledQuery, messages.LogSQL),
+				logpanel.AddLogCmd("Failed to execute query: "+err.Error(), messages.LogError),
 				notifications.ShowError("Failed to execute query: " + err.Error()),
 			}
 		}
@@ -224,8 +224,8 @@ func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, d
 			values, err := rows.Values()
 			if err != nil {
 				return tea.BatchMsg{
-					logpanel.AddLogCmd(compiledQuery, sharedcomponents.LogSQL),
-					logpanel.AddLogCmd("Failed to read row: "+err.Error(), sharedcomponents.LogError),
+					logpanel.AddLogCmd(compiledQuery, messages.LogSQL),
+					logpanel.AddLogCmd("Failed to read row: "+err.Error(), messages.LogError),
 					notifications.ShowError("Failed to read row: " + err.Error()),
 				}
 			}
@@ -238,16 +238,16 @@ func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, d
 		if rows.Err() != nil {
 			log.Printf("Row iteration error: %s", rows.Err().Error())
 			return tea.BatchMsg{
-				logpanel.AddLogCmd(compiledQuery, sharedcomponents.LogSQL),
-				logpanel.AddLogCmd("Row iteration error: "+rows.Err().Error(), sharedcomponents.LogError),
+				logpanel.AddLogCmd(compiledQuery, messages.LogSQL),
+				logpanel.AddLogCmd("Row iteration error: "+rows.Err().Error(), messages.LogError),
 				notifications.ShowError("Row iteration error: " + rows.Err().Error()),
 			}
 		}
 		return tea.BatchMsg{
-			logpanel.AddLogCmd(compiledQuery, sharedcomponents.LogSQL),
-			logpanel.AddLogCmd(fmt.Sprintf("Executed query in %s(execution: %s, fetching: %s), retrieved %d rows", totalTime, executionTime, fetchingTime, len(results)), sharedcomponents.LogSuccess),
+			logpanel.AddLogCmd(compiledQuery, messages.LogSQL),
+			logpanel.AddLogCmd(fmt.Sprintf("Executed query in %s(execution: %s, fetching: %s), retrieved %d rows", totalTime, executionTime, fetchingTime, len(results)), messages.LogSuccess),
 			func() tea.Msg {
-				return sharedcomponents.SQLResultMsg{
+				return query.SQLResultMsg{
 					Columns:    columnNames,
 					Rows:       results,
 					Query:      q,
@@ -261,10 +261,10 @@ func executeSQLQuery(r *database.DBRegistry, q sharedcomponents.QueryCompiler, d
 func openTableHandler(r *database.DBRegistry, table *database.Table, databaseID string) tea.Cmd {
 	log.Printf("Opening table %s\n", table.Name)
 	return tea.Batch(
-		logpanel.AddLogCmd(fmt.Sprintf("Opening table: %s", table.Name), sharedcomponents.LogInfo),
+		logpanel.AddLogCmd(fmt.Sprintf("Opening table: %s", table.Name), messages.LogInfo),
 		func() tea.Msg {
 			baseQuery := fmt.Sprintf("SELECT * FROM \"%s\"", table.Name)
-			q := sharedcomponents.NewTableQuery(baseQuery, 500)
+			q := query.NewTableQuery(baseQuery, 500)
 			return executeSQLQuery(r, q, databaseID)()
 		},
 	)

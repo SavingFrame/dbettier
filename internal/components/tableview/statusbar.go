@@ -6,7 +6,7 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/query"
 	"github.com/SavingFrame/dbettier/internal/theme"
 	zone "github.com/lrstanley/bubblezone/v2"
 )
@@ -54,7 +54,7 @@ type StatusBar struct {
 	focusedCol   int
 	totalCols    int
 	isTableQuery bool
-	sortOrders   sharedcomponents.OrderByClauses
+	sortOrders   query.OrderByClauses
 
 	// Input fields
 	filterInput   textinput.Model
@@ -151,7 +151,7 @@ func (s *StatusBar) SyncState(
 	canFetchMore bool,
 	focusedCol, totalCols int,
 	isTableQuery bool,
-	sortOrders sharedcomponents.OrderByClauses,
+	sortOrders query.OrderByClauses,
 ) {
 	s.focusedRow = focusedRow
 	s.totalRows = totalRows

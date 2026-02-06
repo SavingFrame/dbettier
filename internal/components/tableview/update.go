@@ -5,8 +5,8 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/messages"
+	"github.com/SavingFrame/dbettier/internal/query"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 	zone "github.com/lrstanley/bubblezone/v2"
 )
@@ -43,7 +43,7 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case messages.TableLoadingMsg:
 		m.isLoading = true
 		return m, tea.Batch(cmds...)
-	case sharedcomponents.SQLResultMsg:
+	case query.SQLResultMsg:
 		log.Printf("Received SQLResultMsg for TableViewModel: %+v", msg)
 		m.isLoading = false
 		result := m.data.SetFromSQLResult(msg)
@@ -54,7 +54,7 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.table.SetRows(rows)
 		log.Println("TableViewModel update complete after SQLResultMsg")
 		log.Printf("Table has %d columns and %d rows", len(m.table.Columns()), len(m.table.Rows()))
-	case sharedcomponents.UpdateTableMsg:
+	case query.UpdateTableMsg:
 		m.isLoading = false
 		m.data.SetQuery(msg.Query)
 		columns, rows := m.data.BuildTableData(msg.Query.GetSQLResult())
@@ -127,7 +127,7 @@ func (m *TableViewModel) handleSortChange(msg table.SortChangeMsg) tea.Cmd {
 
 	orderByClauses := m.data.HandleSortChange(m.table.Columns(), msg.SortOrders)
 	switch tq := m.data.Query().(type) {
-	case *sharedcomponents.TableQuery:
+	case *query.TableQuery:
 		cmd := tq.HandleSortChange(orderByClauses)
 		return cmd
 	}
@@ -179,7 +179,7 @@ func (m *TableViewModel) handleFilterInput(msg tea.Msg) (tea.Cmd, bool) {
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		if key.Matches(msg, DefaultKeyMap.Enter) {
 			v := m.statusBar.FilterValue()
-			if tq, ok := m.data.Query().(*sharedcomponents.TableQuery); ok {
+			if tq, ok := m.data.Query().(*query.TableQuery); ok {
 				tableUpdateCmd := tq.SetWhereClause(v)
 				cmds = append(cmds, tableUpdateCmd)
 				return tea.Batch(cmds...), false
@@ -223,12 +223,12 @@ func (m *TableViewModel) handleOrderingInput(msg tea.Msg) (tea.Cmd, bool) {
 // applyOrdering parses the ordering input and applies it to the table query.
 // Returns the command to execute and whether the ordering was successfully applied.
 func (m *TableViewModel) applyOrdering() (tea.Cmd, bool) {
-	tq, ok := m.data.Query().(*sharedcomponents.TableQuery)
+	tq, ok := m.data.Query().(*query.TableQuery)
 	if !ok {
 		return nil, false
 	}
 
-	orderByClauses, err := sharedcomponents.ParseOrderByClauses(m.statusBar.OrderingValue())
+	orderByClauses, err := query.ParseOrderByClauses(m.statusBar.OrderingValue())
 	if err != nil {
 		// TODO: show error notification to user
 		return nil, false
@@ -240,7 +240,7 @@ func (m *TableViewModel) applyOrdering() (tea.Cmd, bool) {
 
 // orderClausesToOrderCols converts OrderByClauses to table.OrderCol slice
 // by resolving column names to their indices.
-func (m *TableViewModel) orderClausesToOrderCols(clauses sharedcomponents.OrderByClauses) []table.OrderCol {
+func (m *TableViewModel) orderClausesToOrderCols(clauses query.OrderByClauses) []table.OrderCol {
 	sortOrders := make([]table.OrderCol, 0, len(clauses))
 	for _, ob := range clauses {
 		sortOrders = append(sortOrders, table.OrderCol{
