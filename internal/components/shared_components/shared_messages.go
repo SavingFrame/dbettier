@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/SavingFrame/dbettier/internal/database"
 )
 
 type QueryCompiler interface {
@@ -28,16 +27,6 @@ type SQLResult struct {
 	Total         int      // Total rows available (for pagination)
 	TotalFetched  int      // Total rows fetched in this result
 	CanFetchTotal bool     // Whether more rows can be fetched
-}
-
-type OpenTableMsg struct {
-	Table      *database.Table
-	DatabaseID string
-}
-
-type ExecuteSQLTextMsg struct {
-	Query      string
-	DatabaseID string
 }
 
 type SQLResultMsg struct {
@@ -85,25 +74,6 @@ func ParseOrderByClauses(s string) (OrderByClauses, error) {
 	return clauses, nil
 }
 
-type TableLoadingMsg struct{}
-
-// LogLevel defines the severity of a log entry
-type LogLevel int
-
-const (
-	LogInfo LogLevel = iota
-	LogSuccess
-	LogWarning
-	LogError
-	LogSQL
-)
-
-// AddLogMsg is a message to add a log entry to the log panel
-type AddLogMsg struct {
-	Message string
-	Level   LogLevel
-}
-
 type ComponentTarget int
 
 const (
@@ -116,16 +86,16 @@ const (
 )
 
 var MessageRoutes = map[string]ComponentTarget{
-	"sharedcomponents.ExecuteSQLTextMsg":    TargetWorkspace,
+	"messages.ExecuteSQLTextMsg":            TargetWorkspace,
 	"sharedcomponents.SQLResultMsg":         TargetTableView | TargetSQLCommandBar,
 	"sharedcomponents.OrderByChangeMsg":     TargetSQLCommandBar,
-	"sharedcomponents.OpenTableMsg":         TargetWorkspace,
+	"messages.OpenTableAndExecuteMsg":       TargetWorkspace,
 	"sharedcomponents.ReapplyTableQueryMsg": TargetWorkspace,
-	"sharedcomponents.TableLoadingMsg":      TargetTableView,
-	"sharedcomponents.AddLogMsg":            TargetLogPanel,
+	"messages.TableLoadingMsg":              TargetTableView,
+	"messages.AddLogMsg":                    TargetLogPanel,
 	"editor.EditorModeChangedMsg":           TargetStatusBar,
 	"editor.EditorCursorMovedMsg":           TargetStatusBar,
-	"workspace.OpenQueryTabMsg":             TargetWorkspace,
+	"messages.OpenQueryTabMsg":              TargetWorkspace,
 }
 
 func GetMessageType(msg tea.Msg) string {

@@ -6,6 +6,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/messages"
 	"github.com/SavingFrame/dbettier/pkgs/table"
 	zone "github.com/lrstanley/bubblezone/v2"
 )
@@ -39,7 +40,7 @@ func (m TableViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	switch msg := msg.(type) {
-	case sharedcomponents.TableLoadingMsg:
+	case messages.TableLoadingMsg:
 		m.isLoading = true
 		return m, tea.Batch(cmds...)
 	case sharedcomponents.SQLResultMsg:

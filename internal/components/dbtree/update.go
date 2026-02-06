@@ -9,8 +9,8 @@ import (
 	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
-	"github.com/SavingFrame/dbettier/internal/components/workspace"
 	"github.com/SavingFrame/dbettier/internal/database"
+	"github.com/SavingFrame/dbettier/internal/messages"
 )
 
 func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -109,7 +109,7 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				q = fmt.Sprintf("SELECT * FROM \"%s\" LIMIT 500;", t)
 			}
 			return m, func() tea.Msg {
-				return workspace.OpenQueryTabMsg{
+				return messages.OpenQueryTabMsg{
 					Query:      sharedcomponents.NewBasicSQLQuery(q),
 					DatabaseID: m.tree.CurrentDatabase().id,
 				}
@@ -156,7 +156,7 @@ func handleDBSelection(i int, registry *database.DBRegistry) tea.Cmd {
 func handleOpenTable(db *databaseNode, t *schemaTableNode) tea.Cmd {
 	return func() tea.Msg {
 		t := t.table
-		return sharedcomponents.OpenTableMsg{
+		return messages.OpenTableAndExecuteMsg{
 			Table:      t,
 			DatabaseID: db.id,
 		}

@@ -12,7 +12,9 @@ import (
 	"github.com/SavingFrame/dbettier/internal/components/logpanel"
 	"github.com/SavingFrame/dbettier/internal/components/notifications"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
+	"github.com/SavingFrame/dbettier/internal/messages"
 	zone "github.com/lrstanley/bubblezone/v2"
 )
 
@@ -56,29 +58,29 @@ func (w Workspace) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			w.CloseActiveTab()
 			return w, nil
 		}
-	case sharedcomponents.ExecuteSQLTextMsg:
+	case messages.ExecuteSQLTextMsg:
 		t := w.ActiveTab()
 		t.DatabaseID = msg.DatabaseID
 		q := sharedcomponents.NewBasicSQLQuery(msg.Query)
 		return w, tea.Batch(
-			func() tea.Msg { return sharedcomponents.TableLoadingMsg{} },
+			func() tea.Msg { return messages.TableLoadingMsg{} },
 			executeSQLQuery(w.registry, q, msg.DatabaseID),
 		)
 
 	case sharedcomponents.ReapplyTableQueryMsg:
 		return w, tea.Batch(
-			func() tea.Msg { return sharedcomponents.TableLoadingMsg{} },
+			func() tea.Msg { return messages.TableLoadingMsg{} },
 			executeSQLQuery(w.registry, msg.Query, w.ActiveTab().DatabaseID),
 		)
 
-	case sharedcomponents.OpenTableMsg:
+	case messages.OpenTableAndExecuteMsg:
 		w.AddTableTab(msg.Table.Name, msg.DatabaseID)
 		return w, tea.Batch(
-			func() tea.Msg { return sharedcomponents.TableLoadingMsg{} },
+			func() tea.Msg { return messages.TableLoadingMsg{} },
 			openTableHandler(w.registry, msg.Table, msg.DatabaseID),
 		)
 
-	case OpenQueryTabMsg:
+	case messages.OpenQueryTabMsg:
 		log.Printf("Opening query tab for database ID %s with query: %s\n", msg.DatabaseID, msg.Query.Compile())
 		w.AddQueryTab(msg.DatabaseID)
 		t := w.ActiveTab()

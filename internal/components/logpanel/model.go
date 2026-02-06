@@ -4,7 +4,7 @@ package logpanel
 import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/messages"
 )
 
 const MaxLogEntries = 1000
@@ -12,7 +12,7 @@ const MaxLogEntries = 1000
 // LogEntry represents a single log message with styling
 type LogEntry struct {
 	Message string
-	Level   sharedcomponents.LogLevel
+	Level   messages.LogLevel
 }
 
 // LogPanelModel handles the log display viewport
@@ -74,7 +74,7 @@ func (m *LogPanelModel) AddEntry(entry LogEntry) {
 }
 
 // AddLog is a convenience method to add a log with level
-func (m *LogPanelModel) AddLog(level sharedcomponents.LogLevel, message string) {
+func (m *LogPanelModel) AddLog(level messages.LogLevel, message string) {
 	m.AddEntry(LogEntry{
 		Message: message,
 		Level:   level,
@@ -97,7 +97,7 @@ func (m *LogPanelModel) refreshContent() {
 	for i, entry := range m.entries {
 		style := getStyleForLevel(entry.Level)
 		message := entry.Message
-		if entry.Level == sharedcomponents.LogSQL {
+		if entry.Level == messages.LogSQL {
 			var err error
 			message, err = highlightCode(entry.Message, "sql")
 			if err != nil {
@@ -114,9 +114,9 @@ func (m *LogPanelModel) refreshContent() {
 	m.viewport.SetContent(content)
 }
 
-func AddLogCmd(message string, level sharedcomponents.LogLevel) tea.Cmd {
+func AddLogCmd(message string, level messages.LogLevel) tea.Cmd {
 	return func() tea.Msg {
-		return sharedcomponents.AddLogMsg{
+		return messages.AddLogMsg{
 			Message: message,
 			Level:   level,
 		}

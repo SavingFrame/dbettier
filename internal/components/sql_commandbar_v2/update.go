@@ -4,6 +4,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/messages"
 )
 
 func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -15,7 +16,7 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, SQLCommandBarV2Keymap.Execute):
 			q := m.editor.GetContent()
 			return m, func() tea.Msg {
-				return sharedcomponents.ExecuteSQLTextMsg{
+				return messages.ExecuteSQLTextMsg{
 					Query:      q,
 					DatabaseID: m.DatabaseID,
 				}

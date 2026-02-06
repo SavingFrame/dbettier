@@ -7,10 +7,10 @@ import (
 	"log"
 
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	sqlcommandbarv2 "github.com/SavingFrame/dbettier/internal/components/sql_commandbar_v2"
 	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
+	"github.com/SavingFrame/dbettier/internal/messages"
 )
 
 // TabType represents the type of content in a tab
@@ -306,13 +306,13 @@ func (w *Workspace) SetScrollOffset(offset int) {
 }
 
 // HandleOpenTable handles opening a table in a new tab
-func (w *Workspace) HandleOpenTable(msg sharedcomponents.OpenTableMsg) tea.Cmd {
+func (w *Workspace) HandleOpenTable(msg messages.OpenTableAndExecuteMsg) tea.Cmd {
 	// Create new table tab
 	w.AddTableTab(msg.Table.Name, msg.DatabaseID)
 
 	// Return command to execute the table query on the new tab
 	return func() tea.Msg {
-		return sharedcomponents.OpenTableMsg{
+		return messages.OpenTableAndExecuteMsg{
 			Table:      msg.Table,
 			DatabaseID: msg.DatabaseID,
 		}

@@ -6,6 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
 	"github.com/SavingFrame/dbettier/internal/database"
+	"github.com/SavingFrame/dbettier/internal/messages"
 )
 
 type SQLCommandBarModel struct {
@@ -49,7 +50,7 @@ SELECT
 FROM pg_stat_user_tables
 		ORDER BY n_live_tup DESC;
 		`
-		return sharedcomponents.ExecuteSQLTextMsg{
+		return messages.ExecuteSQLTextMsg{
 			Query:      q,
 			DatabaseID: m.registry.GetAll()[0].ID,
 		}

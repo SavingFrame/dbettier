@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
-	sharedcomponents "github.com/SavingFrame/dbettier/internal/components/shared_components"
+	"github.com/SavingFrame/dbettier/internal/messages"
 	"github.com/SavingFrame/dbettier/internal/theme"
 	"github.com/alecthomas/chroma/v2/quick"
 )
@@ -14,7 +14,7 @@ func (m LogPanelModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case sharedcomponents.AddLogMsg:
+	case messages.AddLogMsg:
 		m.AddLog(convertLogLevel(msg.Level), msg.Message)
 		return m, nil
 	case tea.KeyPressMsg, tea.MouseMsg, tea.MouseWheelMsg:
@@ -28,20 +28,20 @@ func (m LogPanelModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // convertLogLevel converts shared log level to local log level
-func convertLogLevel(level sharedcomponents.LogLevel) sharedcomponents.LogLevel {
+func convertLogLevel(level messages.LogLevel) messages.LogLevel {
 	switch level {
-	case sharedcomponents.LogInfo:
-		return sharedcomponents.LogInfo
-	case sharedcomponents.LogSuccess:
-		return sharedcomponents.LogSuccess
-	case sharedcomponents.LogWarning:
-		return sharedcomponents.LogWarning
-	case sharedcomponents.LogError:
-		return sharedcomponents.LogError
-	case sharedcomponents.LogSQL:
-		return sharedcomponents.LogSQL
+	case messages.LogInfo:
+		return messages.LogInfo
+	case messages.LogSuccess:
+		return messages.LogSuccess
+	case messages.LogWarning:
+		return messages.LogWarning
+	case messages.LogError:
+		return messages.LogError
+	case messages.LogSQL:
+		return messages.LogSQL
 	default:
-		return sharedcomponents.LogInfo
+		return messages.LogInfo
 	}
 }
 
