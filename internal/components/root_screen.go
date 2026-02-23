@@ -103,7 +103,7 @@ func borderedInner(total int) int {
 	return max(0, total-2)
 }
 
-func calculateRootLayout(width, height int) rootLayout {
+func calculateRootLayout(width, height int, hasTabs bool) rootLayout {
 	layout := rootLayout{
 		helpHeight:   1,
 		statusHeight: 1,
@@ -114,7 +114,11 @@ func calculateRootLayout(width, height int) rootLayout {
 	}
 
 	layout.contentHeight = max(0, height-layout.helpHeight-layout.statusHeight)
-	layout.tabBarHeight = min(workspace.TabBarHeight, layout.contentHeight)
+	if hasTabs {
+		layout.tabBarHeight = min(workspace.TabBarHeight, layout.contentHeight)
+	} else {
+		layout.tabBarHeight = 0
+	}
 
 	layout.leftWidth, layout.rightWidth = splitByRatio(width, DBTreeWidthRatio)
 
@@ -129,6 +133,33 @@ func calculateRootLayout(width, height int) rootLayout {
 	layout.sqlWidth, layout.logWidth = splitByRatio(layout.rightWidth, SQLCommandBarWidthRatio)
 
 	return layout
+}
+
+func (m *rootScreenModel) applyLayout() {
+	m.layout = calculateRootLayout(m.width, m.height, m.workspace.HasTabs())
+
+	// Update help width for proper truncation
+	m.help.SetWidth(m.width)
+
+	m.dbtree.SetSize(
+		borderedInner(m.layout.leftWidth),
+		borderedInner(m.layout.contentHeight),
+	)
+
+	m.workspace.SetSize(m.layout.rightWidth, m.layout.tabBarHeight)
+	m.workspace.SetTabSizes(
+		borderedInner(m.layout.rightWidth),
+		borderedInner(m.layout.tableHeight),
+		borderedInner(m.layout.sqlWidth),
+		borderedInner(m.layout.bottomHeight),
+	)
+
+	m.logPanel.SetSize(
+		borderedInner(m.layout.logWidth),
+		borderedInner(m.layout.bottomHeight),
+	)
+
+	m.statusBar.SetSize(m.width, m.layout.statusHeight)
 }
 
 func (m rootScreenModel) Init() tea.Cmd {
@@ -189,30 +220,7 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.layout = calculateRootLayout(msg.Width, msg.Height)
-
-		// Update help width for proper truncation
-		m.help.SetWidth(msg.Width)
-
-		m.dbtree.SetSize(
-			borderedInner(m.layout.leftWidth),
-			borderedInner(m.layout.contentHeight),
-		)
-
-		m.workspace.SetSize(m.layout.rightWidth, m.layout.tabBarHeight)
-		m.workspace.SetTabSizes(
-			borderedInner(m.layout.rightWidth),
-			borderedInner(m.layout.tableHeight),
-			borderedInner(m.layout.sqlWidth),
-			borderedInner(m.layout.bottomHeight),
-		)
-
-		m.logPanel.SetSize(
-			borderedInner(m.layout.logWidth),
-			borderedInner(m.layout.bottomHeight),
-		)
-
-		m.statusBar.SetSize(m.width, m.layout.statusHeight)
+		m.applyLayout()
 		return m, nil
 
 	case tea.KeyMsg:
@@ -224,6 +232,7 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Handle tab navigation (works globally, not just when focused on tabbar)
 		if m.workspace.HandleKeys(msg) {
+			m.applyLayout()
 			return m, nil
 		}
 
@@ -329,10 +338,13 @@ func (m *rootScreenModel) routeToComponents(msg tea.Msg) []tea.Cmd {
 
 	// Route to active tab's components
 	if targets&sharedcomponents.TargetWorkspace != 0 {
-		// Handle OpenTableMsg specially - create new tab
+		hadTabs := m.workspace.HasTabs()
 		var workspaceModel tea.Model
 		workspaceModel, cmd = m.workspace.Update(msg)
 		m.workspace = workspaceModel.(workspace.Workspace)
+		if hadTabs != m.workspace.HasTabs() {
+			m.applyLayout()
+		}
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -475,7 +487,6 @@ func (m rootScreenModel) renderSplitLayout() string {
 
 	// Get component views
 	treeView := zone.Mark("dbTree", m.renderDBTree())
-	tabBarView := zone.Mark("tabbar", m.renderTabBar())
 	tableView := zone.Mark("tableview", m.renderTableView())
 	sqlView := zone.Mark("sqlCommandBar", m.renderSQLCommandBar())
 	logView := zone.Mark("logPanel", m.renderLogPanel())
@@ -483,8 +494,14 @@ func (m rootScreenModel) renderSplitLayout() string {
 	// Compose bottom row (SQL command bar on left, log panel on right)
 	bottomRow := lipgloss.JoinHorizontal(lipgloss.Left, sqlView, logView)
 
-	// Compose right column (tab bar on top, table view below, bottom row at bottom)
-	rightColumn := lipgloss.JoinVertical(lipgloss.Left, tabBarView, tableView, bottomRow)
+	// Compose right column. Avoid adding an empty tab-bar line when there are no tabs.
+	var rightColumn string
+	if m.layout.tabBarHeight > 0 {
+		tabBarView := zone.Mark("tabbar", m.renderTabBar())
+		rightColumn = lipgloss.JoinVertical(lipgloss.Left, tabBarView, tableView, bottomRow)
+	} else {
+		rightColumn = lipgloss.JoinVertical(lipgloss.Left, tableView, bottomRow)
+	}
 
 	// Compose full layout (tree on left, right column on right)
 	layout := lipgloss.JoinHorizontal(lipgloss.Left, treeView, rightColumn)
@@ -511,6 +528,10 @@ func (m rootScreenModel) renderDBTree() string {
 }
 
 func (m rootScreenModel) renderTabBar() string {
+	if m.layout.tabBarHeight <= 0 {
+		return ""
+	}
+
 	colors := theme.Current().Colors
 	return lipgloss.NewStyle().
 		Width(m.layout.rightWidth).

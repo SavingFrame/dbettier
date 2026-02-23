@@ -117,6 +117,11 @@ func (w *Workspace) Tabs() []Tab {
 	return w.tabs
 }
 
+// HasTabs returns true when at least one tab is open.
+func (w *Workspace) HasTabs() bool {
+	return len(w.tabs) > 0
+}
+
 // ActiveIndex returns the currently active tab index
 func (w *Workspace) ActiveIndex() int {
 	return w.activeIndex
