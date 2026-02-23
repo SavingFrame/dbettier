@@ -14,6 +14,8 @@ type KeyMap struct {
 	Backspace        key.Binding
 	Execute          key.Binding
 	Space            key.Binding
+	EndLineEdge      key.Binding
+	StartLineEdge    key.Binding
 }
 
 var NormalModeKeymap = KeyMap{
@@ -46,6 +48,12 @@ var NormalModeKeymap = KeyMap{
 	Down: key.NewBinding(
 		key.WithKeys("j", "down"),
 		key.WithHelp("j/down", "move down"),
+	),
+	StartLineEdge: key.NewBinding(
+		key.WithKeys("^"),
+	),
+	EndLineEdge: key.NewBinding(
+		key.WithKeys("$"),
 	),
 }
 

@@ -104,6 +104,28 @@ func (c *editorCursor) moveLastSymbol(lines []string) {
 	c.row = len(lines) - 1
 }
 
+func (c *editorCursor) gotoStartEdge(buff *buffer) {
+	line := buff.lines[c.row]
+	for i, char := range line {
+		// NOTE: This is probably wrong for non-ASCII characters, but it should work for most cases.
+		if char != ' ' {
+			c.col = i
+			break
+		}
+	}
+}
+
+func (c *editorCursor) gotoEndEdge(buff *buffer) {
+	line := buff.lines[c.row]
+	for i := len(line) - 1; i >= 0; i-- {
+		// NOTE: This is probably wrong for non-ASCII characters, but it should work for most cases.
+		if line[i] != ' ' {
+			c.col = i
+			break
+		}
+	}
+}
+
 func (c *editorCursor) setCharUnderCursor(lines []string) {
 	focusedLine := lines[c.row]
 	var charUnderCursor string

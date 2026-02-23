@@ -61,6 +61,12 @@ func (m *SQLEditor) processNormalModeKey(msg tea.KeyMsg) tea.Cmd {
 		moveCmd := func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 		modeCmd := func() tea.Msg { return EditorModeChangedMsg{Mode: m.mode} }
 		cmd = tea.Batch(moveCmd, modeCmd)
+	case key.Matches(msg, NormalModeKeymap.EndLineEdge):
+		m.cursor.gotoEndEdge(m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
+	case key.Matches(msg, NormalModeKeymap.StartLineEdge):
+		m.cursor.gotoStartEdge(m.buffer)
+		cmd = func() tea.Msg { return EditorCursorMovedMsg{Row: m.cursor.row, Col: m.cursor.col} }
 	case key.Matches(msg, NormalModeKeymap.Exit):
 		cmd = tea.Quit
 	}
