@@ -8,19 +8,32 @@ import (
 // Style functions that use the current theme
 
 func enumeratorStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(theme.Current().Colors.Secondary).MarginRight(1)
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Secondary).
+		Background(colors.Base).
+		MarginRight(1)
 }
 
 func rootStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(theme.Current().Colors.Success)
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Success).
+		Background(colors.Base)
 }
 
 func itemStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(theme.Current().Colors.Text)
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Text).
+		Background(colors.Base)
 }
 
 func focusedStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(theme.Current().Colors.Primary)
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Primary).
+		Background(colors.Base)
 }
 
 func searchMatchStyle() lipgloss.Style {
@@ -36,5 +49,8 @@ func searchMatchActiveStyle() lipgloss.Style {
 }
 
 func searchBarStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(theme.Current().Colors.Subtle)
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Subtle).
+		Background(colors.Base)
 }

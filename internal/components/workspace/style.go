@@ -57,6 +57,7 @@ func activeTabStyle() lipgloss.Style {
 		Border(activeTabBorder(), true).
 		BorderForeground(colors.Primary).
 		Foreground(colors.Text).
+		Background(colors.Base).
 		Padding(0, 1)
 }
 
@@ -67,6 +68,7 @@ func inactiveTabStyle() lipgloss.Style {
 		Border(inactiveTabBorder(), true).
 		BorderForeground(colors.Border).
 		Foreground(colors.Subtle).
+		Background(colors.Surface).
 		Padding(0, 1)
 }
 
@@ -74,12 +76,13 @@ func inactiveTabStyle() lipgloss.Style {
 func tabGapStyle() lipgloss.Style {
 	colors := theme.Current().Colors
 	return lipgloss.NewStyle().
-		BorderStyle(tabGapBorder()).
-		BorderBottom(true).
-		BorderTop(false).
-		BorderLeft(false).
-		BorderRight(false).
-		BorderForeground(colors.Border)
+		Background(colors.Base)
+}
+
+func emptyTabBarStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Background(colors.Base)
 }
 
 // closeButtonStyle returns the style for the close button
@@ -88,17 +91,24 @@ func closeButtonStyle(active bool) lipgloss.Style {
 	style := lipgloss.NewStyle().
 		MarginLeft(1)
 	if active {
-		style = style.Foreground(colors.Error)
+		style = style.Foreground(colors.Error).Background(colors.Base)
 	} else {
-		style = style.Foreground(colors.Muted)
+		style = style.Foreground(colors.Muted).Background(colors.Surface)
 	}
 	return style
 }
 
 // iconStyle returns the style for tab icons
-func iconStyle(tabType TabType) lipgloss.Style {
+func iconStyle(tabType TabType, active bool) lipgloss.Style {
 	colors := theme.Current().Colors
-	style := lipgloss.NewStyle().MarginRight(1)
+	bg := colors.Surface
+	if active {
+		bg = colors.Base
+	}
+
+	style := lipgloss.NewStyle().
+		MarginRight(1).
+		Background(bg)
 	switch tabType {
 	case TabTypeTable:
 		style = style.Foreground(colors.Blue)
@@ -106,4 +116,65 @@ func iconStyle(tabType TabType) lipgloss.Style {
 		style = style.Foreground(colors.Purple)
 	}
 	return style
+}
+
+func tabNameStyle(active bool) lipgloss.Style {
+	colors := theme.Current().Colors
+	fg := colors.Subtle
+	bg := colors.Surface
+	if active {
+		fg = colors.Text
+		bg = colors.Base
+	}
+	return lipgloss.NewStyle().
+		Foreground(fg).
+		Background(bg)
+}
+
+func tabSpaceStyle(active bool) lipgloss.Style {
+	colors := theme.Current().Colors
+	bg := colors.Surface
+	if active {
+		bg = colors.Base
+	}
+	return lipgloss.NewStyle().Background(bg)
+}
+
+func emptyWorkspaceCardStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colors.Border).
+		Background(colors.Surface).
+		Padding(1, 2)
+}
+
+func emptyWorkspaceTitleStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Primary).
+		Background(colors.Surface).
+		Bold(true)
+}
+
+func emptyWorkspaceSubtitleStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Subtle).
+		Background(colors.Surface)
+}
+
+func emptyWorkspaceHintStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Text).
+		Background(colors.Surface)
+}
+
+func emptyWorkspaceBulletStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Info).
+		Background(colors.Surface).
+		Bold(true)
 }

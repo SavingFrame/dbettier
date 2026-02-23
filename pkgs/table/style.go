@@ -12,11 +12,13 @@ func DefaultStyles() Styles {
 		Header: lipgloss.NewStyle().
 			Bold(true).
 			Padding(0, 1).
+			Background(colors.Base).
 			BorderStyle(lipgloss.NormalBorder()).
 			BorderBottom(true).
 			BorderForeground(colors.Border),
 		Cell: lipgloss.NewStyle().
-			Padding(0, 1),
+			Padding(0, 1).
+			Background(colors.Base),
 		SelectedCell: lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Primary).
@@ -47,10 +49,16 @@ func headerFocusedStyle(base lipgloss.Style) lipgloss.Style {
 
 // searchBarStyle returns the style for the search bar.
 func searchBarStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(theme.Current().Colors.Subtle)
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Subtle).
+		Background(colors.Base)
 }
 
 // scrollIndicatorStyle returns the style for scroll indicators.
 func scrollIndicatorStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(theme.Current().Colors.Subtle)
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Subtle).
+		Background(colors.Base)
 }

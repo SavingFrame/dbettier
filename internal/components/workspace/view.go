@@ -12,7 +12,13 @@ import (
 // RenderTabBar renders the tab bar
 func (w *Workspace) RenderTabBar() string {
 	if len(w.tabs) == 0 {
-		return ""
+		if w.width <= 0 {
+			return ""
+		}
+		return emptyTabBarStyle().
+			Width(w.width).
+			Height(TabBarHeight).
+			Render("")
 	}
 
 	activeStyle := activeTabStyle()
@@ -20,7 +26,6 @@ func (w *Workspace) RenderTabBar() string {
 	gapStyle := tabGapStyle()
 
 	var renderedTabs []string
-	totalWidth := 0
 
 	// Calculate which tabs to show based on scroll offset and available width
 	visibleTabs := w.calculateVisibleTabs()
@@ -30,11 +35,12 @@ func (w *Workspace) RenderTabBar() string {
 		isActive := idx == w.activeIndex
 
 		// Build tab content: icon + name + close button
-		icon := iconStyle(tab.Type).Render(tab.Icon())
-		name := tab.Name
+		icon := iconStyle(tab.Type, isActive).Render(tab.Icon())
+		name := tabNameStyle(isActive).Render(tab.Name)
+		space := tabSpaceStyle(isActive).Render(" ")
 		closeBtn := closeButtonStyle(isActive).Render("×")
 
-		content := fmt.Sprintf("%s%s %s", icon, name, closeBtn)
+		content := icon + name + space + closeBtn
 
 		var tabView string
 		if isActive {
@@ -52,7 +58,6 @@ func (w *Workspace) RenderTabBar() string {
 		_ = closeZone
 
 		renderedTabs = append(renderedTabs, tabZone)
-		totalWidth += lipgloss.Width(tabView)
 	}
 
 	// Join all tabs horizontally
@@ -150,10 +155,11 @@ func (w *Workspace) GetTabIndexAtPosition(x int) int {
 		isActive := idx == w.activeIndex
 
 		// Calculate tab width
-		icon := iconStyle(tab.Type).Render(tab.Icon())
-		name := tab.Name
+		icon := iconStyle(tab.Type, isActive).Render(tab.Icon())
+		name := tabNameStyle(isActive).Render(tab.Name)
+		space := tabSpaceStyle(isActive).Render(" ")
 		closeBtn := closeButtonStyle(isActive).Render("×")
-		content := fmt.Sprintf("%s%s %s", icon, name, closeBtn)
+		content := icon + name + space + closeBtn
 
 		var tabWidth int
 		if isActive {
@@ -181,10 +187,11 @@ func (w *Workspace) IsCloseButtonClick(tabIndex, relativeX int) bool {
 	isActive := tabIndex == w.activeIndex
 
 	// Calculate tab content width
-	icon := iconStyle(tab.Type).Render(tab.Icon())
-	name := tab.Name
+	icon := iconStyle(tab.Type, isActive).Render(tab.Icon())
+	name := tabNameStyle(isActive).Render(tab.Name)
+	space := tabSpaceStyle(isActive).Render(" ")
 	closeBtn := closeButtonStyle(isActive).Render("×")
-	content := fmt.Sprintf("%s%s %s", icon, name, closeBtn)
+	content := icon + name + space + closeBtn
 
 	var style lipgloss.Style
 	if isActive {

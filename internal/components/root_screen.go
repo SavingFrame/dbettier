@@ -36,6 +36,23 @@ const (
 	SQLCommandBarWidthRatio  = 0.60 // 60% of bottom row for SQL command bar
 )
 
+type rootLayout struct {
+	helpHeight   int
+	statusHeight int
+
+	contentHeight int
+
+	leftWidth  int
+	rightWidth int
+
+	tabBarHeight int
+	tableHeight  int
+	bottomHeight int
+
+	sqlWidth int
+	logWidth int
+}
+
 type rootScreenModel struct {
 	dbtree    dbtree.DBTreeModel
 	workspace workspace.Workspace
@@ -47,6 +64,7 @@ type rootScreenModel struct {
 	notification *notifications.Notification
 	width        int
 	height       int
+	layout       rootLayout
 	registry     *database.DBRegistry
 
 	// Help
@@ -66,6 +84,51 @@ func RootScreen(registry *database.DBRegistry) rootScreenModel {
 		help:        help.New(),
 		keys:        DefaultGlobalKeyMap,
 	}
+}
+
+func splitByRatio(total int, ratio float64) (first, second int) {
+	if total <= 0 {
+		return 0, 0
+	}
+	if total == 1 {
+		return 1, 0
+	}
+	first = int(float64(total) * ratio)
+	first = max(1, min(total-1, first))
+	second = total - first
+	return first, second
+}
+
+func borderedInner(total int) int {
+	return max(0, total-2)
+}
+
+func calculateRootLayout(width, height int) rootLayout {
+	layout := rootLayout{
+		helpHeight:   1,
+		statusHeight: 1,
+	}
+
+	if width <= 0 || height <= 0 {
+		return layout
+	}
+
+	layout.contentHeight = max(0, height-layout.helpHeight-layout.statusHeight)
+	layout.tabBarHeight = min(workspace.TabBarHeight, layout.contentHeight)
+
+	layout.leftWidth, layout.rightWidth = splitByRatio(width, DBTreeWidthRatio)
+
+	bodyHeight := max(0, layout.contentHeight-layout.tabBarHeight)
+	tableRatio := 1.0 - (float64(SQLCommandBarHeightRatio) / 100.0)
+	layout.tableHeight, layout.bottomHeight = splitByRatio(bodyHeight, tableRatio)
+	if bodyHeight > 0 && layout.bottomHeight == 0 {
+		layout.bottomHeight = 1
+		layout.tableHeight = max(0, bodyHeight-layout.bottomHeight)
+	}
+
+	layout.sqlWidth, layout.logWidth = splitByRatio(layout.rightWidth, SQLCommandBarWidthRatio)
+
+	return layout
 }
 
 func (m rootScreenModel) Init() tea.Cmd {
@@ -126,33 +189,30 @@ func (m rootScreenModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.layout = calculateRootLayout(msg.Width, msg.Height)
 
 		// Update help width for proper truncation
 		m.help.SetWidth(msg.Width)
 
-		// Reserve space for short help bar at bottom (1 line), status bar (1 line), and tab bar at top
-		helpHeight := 1
-		statusBarHeight := 1
-		tabBarHeight := workspace.TabBarHeight
-		availableHeight := m.height - helpHeight - statusBarHeight - tabBarHeight
+		m.dbtree.SetSize(
+			borderedInner(m.layout.leftWidth),
+			borderedInner(m.layout.contentHeight),
+		)
 
-		// Calculate dimensions for each component
-		leftWidth := int(float64(m.width) * DBTreeWidthRatio)
-		rightWidth := m.width - leftWidth
-		bottomRowHeight := int(float64(availableHeight) * (float64(SQLCommandBarHeightRatio) / 100.0))
-		tableViewHeight := availableHeight - bottomRowHeight
+		m.workspace.SetSize(m.layout.rightWidth, m.layout.tabBarHeight)
+		m.workspace.SetTabSizes(
+			borderedInner(m.layout.rightWidth),
+			borderedInner(m.layout.tableHeight),
+			borderedInner(m.layout.sqlWidth),
+			borderedInner(m.layout.bottomHeight),
+		)
 
-		// Calculate widths for SQL command bar and log panel (split bottom row)
-		sqlCommandBarWidth := int(float64(rightWidth) * SQLCommandBarWidthRatio)
-		logPanelWidth := rightWidth - sqlCommandBarWidth
+		m.logPanel.SetSize(
+			borderedInner(m.layout.logWidth),
+			borderedInner(m.layout.bottomHeight),
+		)
 
-		// Update component sizes (accounting for borders: 2 per side = 4 for width, 2 for height)
-		// Each border style will add 2 to width and 2 to height, so we subtract those
-		m.dbtree.SetSize(leftWidth-4, m.height-helpHeight-2)
-		m.workspace.SetSize(rightWidth, tabBarHeight)
-		m.workspace.SetTabSizes(rightWidth-4, tableViewHeight-2, sqlCommandBarWidth-4, bottomRowHeight+2)
-		m.logPanel.SetSize(logPanelWidth+4, bottomRowHeight-2) // TODO: Something weird with width here. if i add +4 it show more content?
-		m.statusBar.SetSize(m.width, 1)                        // Status bar is always 1 line tall
+		m.statusBar.SetSize(m.width, m.layout.statusHeight)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -307,12 +367,41 @@ func (m rootScreenModel) View() tea.View {
 	v.AltScreen = true
 	v.MouseMode = tea.MouseModeCellMotion
 
+	colors := theme.Current().Colors
+	v.BackgroundColor = colors.Base
+	baseHeight := m.layout.contentHeight
+	if baseHeight <= 0 {
+		baseHeight = max(0, m.height-2)
+	}
 	baseView := m.renderSplitLayout()
+	if m.width > 0 {
+		baseView = lipgloss.NewStyle().
+			Width(m.width).
+			Height(baseHeight).
+			Background(colors.Base).
+			Render(baseView)
+	}
 
 	// Render status bar and short help bar at the bottom (always visible)
 	statusBarView := m.statusBar.RenderContent()
+	if m.width > 0 {
+		statusBarView = lipgloss.NewStyle().
+			Width(m.width).
+			Height(max(1, m.layout.statusHeight)).
+			Background(colors.Surface).
+			Render(statusBarView)
+	}
+
 	shortHelpView := m.help.ShortHelpView(m.getContextKeyMap().ShortHelp())
-	fullView := lipgloss.JoinVertical(lipgloss.Left, baseView, statusBarView, shortHelpView)
+	if m.width > 0 {
+		shortHelpView = lipgloss.NewStyle().
+			Width(m.width).
+			Height(max(1, m.layout.helpHeight)).
+			Background(colors.Base).
+			Render(shortHelpView)
+	}
+
+	fullView := lipgloss.JoinVertical(lipgloss.Left, baseView, shortHelpView, statusBarView)
 
 	// If full help is toggled, render it as a centered popup overlay
 	if m.help.ShowAll && m.width > 0 && m.height > 0 {
@@ -346,12 +435,18 @@ func (m rootScreenModel) View() tea.View {
 // renderWithHelpPopup renders the full help as a centered popup overlay
 func (m rootScreenModel) renderWithHelpPopup(baseView string) string {
 	fullHelpContent := m.help.FullHelpView(m.getContextKeyMap().FullHelp())
+	colors := theme.Current().Colors
+	fullHelpContent = lipgloss.NewStyle().Background(colors.Surface).Render(fullHelpContent)
 
 	popupStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colors.BorderFocused).
+		Background(colors.Surface).
 		Padding(1, 2)
 
 	titleStyle := lipgloss.NewStyle().
+		Foreground(colors.Primary).
+		Background(colors.Surface).
 		Bold(true).
 		MarginBottom(1)
 
@@ -404,23 +499,24 @@ func (m rootScreenModel) renderDBTree() string {
 		borderColor = colors.BorderFocused
 	}
 
-	// Calculate fixed width for dbtree
-	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
-
-	helpHeight := 1
-
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
-		Width(leftWidth - 4). // Subtract 4 for border padding
-		Height(m.height - helpHeight)
+		Background(colors.Base).
+		Width(m.layout.leftWidth).
+		Height(m.layout.contentHeight)
 
 	content := m.dbtree.RenderContent()
 	return borderStyle.Render(content)
 }
 
 func (m rootScreenModel) renderTabBar() string {
-	return m.workspace.RenderTabBar()
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Width(m.layout.rightWidth).
+		Height(m.layout.tabBarHeight).
+		Background(colors.Base).
+		Render(m.workspace.RenderTabBar())
 }
 
 func (m rootScreenModel) renderTableView() string {
@@ -430,11 +526,12 @@ func (m rootScreenModel) renderTableView() string {
 		borderColor = colors.BorderFocused
 	}
 
-	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
-	// Don't set explicit height - let the content determine it
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(borderColor).Width(m.width - leftWidth)
+		BorderForeground(borderColor).
+		Background(colors.Base).
+		Width(m.layout.rightWidth).
+		Height(m.layout.tableHeight)
 
 	content := m.workspace.RenderActiveTableView()
 	return borderStyle.Render(content)
@@ -447,19 +544,12 @@ func (m rootScreenModel) renderSQLCommandBar() string {
 		borderColor = colors.BorderFocused
 	}
 
-	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
-	rightWidth := m.width - leftWidth
-	sqlCommandBarWidth := int(float64(rightWidth) * SQLCommandBarWidthRatio)
-	_, tableViewY := m.workspace.GetActiveTableViewSize()
-
-	helpHeight := 1
-	tabBarHeight := workspace.TabBarHeight
-
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
-		Width(sqlCommandBarWidth - 4).
-		Height(m.height - tableViewY - helpHeight - tabBarHeight)
+		Background(colors.Base).
+		Width(m.layout.sqlWidth).
+		Height(m.layout.bottomHeight)
 
 	content := m.workspace.RenderActiveSQLCommandBar()
 	return borderStyle.Render(content)
@@ -472,19 +562,12 @@ func (m rootScreenModel) renderLogPanel() string {
 		borderColor = colors.BorderFocused
 	}
 
-	leftWidth := int(float64(m.width) * DBTreeWidthRatio)
-	rightWidth := m.width - leftWidth
-	sqlCommandBarWidth := int(float64(rightWidth) * SQLCommandBarWidthRatio)
-	logPanelWidth := rightWidth - sqlCommandBarWidth
-	_, tableViewY := m.workspace.GetActiveTableViewSize()
-
-	tabBarHeight := workspace.TabBarHeight
-
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(borderColor).
-		Width(logPanelWidth + 4).
-		Height(m.height - tableViewY - tabBarHeight)
+		Background(colors.Base).
+		Width(m.layout.logWidth).
+		Height(m.layout.bottomHeight)
 
 	content := m.logPanel.RenderContent()
 	return borderStyle.Render(content)

@@ -262,7 +262,7 @@ func (w *Workspace) GetActiveTableViewSize() (int, int) {
 	if tab := w.ActiveTab(); tab != nil {
 		return tab.TableView.GetSize()
 	}
-	return 0, 0
+	return w.TableViewSize.width, w.TableViewSize.height
 }
 
 // RenderActiveTableView returns the rendered content of the active tableview
@@ -270,7 +270,7 @@ func (w *Workspace) RenderActiveTableView() string {
 	if tab := w.ActiveTab(); tab != nil {
 		return tab.TableView.RenderContent()
 	}
-	return ""
+	return w.renderNoTabTableState()
 }
 
 // RenderActiveSQLCommandBar returns the rendered content of the active sqlcommandbar
@@ -278,7 +278,7 @@ func (w *Workspace) RenderActiveSQLCommandBar() string {
 	if tab := w.ActiveTab(); tab != nil {
 		return tab.SQLCommandBar.RenderContent()
 	}
-	return ""
+	return w.renderNoTabSQLState()
 }
 
 // Width returns the tab bar width

@@ -10,33 +10,39 @@ import (
 func sbIconStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(theme.Current().Colors.Info).
+		Background(theme.Current().Colors.Base).
 		Bold(true)
 }
 
 func sbSepStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(theme.Current().Colors.Muted)
+		Foreground(theme.Current().Colors.Muted).
+		Background(theme.Current().Colors.Base)
 }
 
 func sbLabelStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(theme.Current().Colors.Subtle)
+		Foreground(theme.Current().Colors.Subtle).
+		Background(theme.Current().Colors.Base)
 }
 
 func sbValueStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(theme.Current().Colors.Text)
+		Foreground(theme.Current().Colors.Text).
+		Background(theme.Current().Colors.Base)
 }
 
 func sbPaginationMsgStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(theme.Current().Colors.Warning).
+		Background(theme.Current().Colors.Base).
 		Bold(true)
 }
 
 func sbInputLabelStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(theme.Current().Colors.Info).
+		Background(theme.Current().Colors.Base).
 		Bold(true)
 }
 
@@ -63,12 +69,14 @@ func sbButtonPrimaryStyle() lipgloss.Style {
 
 func sbSortStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(theme.Current().Colors.Info)
+		Foreground(theme.Current().Colors.Info).
+		Background(theme.Current().Colors.Base)
 }
 
 func sbDimStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(theme.Current().Colors.Muted)
+		Foreground(theme.Current().Colors.Muted).
+		Background(theme.Current().Colors.Base)
 }
 
 // Table view style functions
@@ -76,7 +84,47 @@ func sbDimStyle() lipgloss.Style {
 func placeholderStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(theme.Current().Colors.Muted).
+		Background(theme.Current().Colors.Base).
 		Italic(true)
+}
+
+func emptyStateCardStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colors.Border).
+		Background(colors.Surface).
+		Padding(1, 2)
+}
+
+func emptyStateTitleStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Primary).
+		Background(colors.Surface).
+		Bold(true)
+}
+
+func emptyStateSubtitleStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Subtle).
+		Background(colors.Surface)
+}
+
+func emptyStateHintStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Text).
+		Background(colors.Surface)
+}
+
+func emptyStateBulletStyle() lipgloss.Style {
+	colors := theme.Current().Colors
+	return lipgloss.NewStyle().
+		Foreground(colors.Info).
+		Background(colors.Surface).
+		Bold(true)
 }
 
 func spinnerStyle() lipgloss.Style {

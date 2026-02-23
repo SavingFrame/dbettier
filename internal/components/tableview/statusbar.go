@@ -170,10 +170,12 @@ func (s *StatusBar) View() string {
 	controls := s.renderControls()
 	posInfo := s.renderPositionInfo()
 
+	baseSpace := lipgloss.NewStyle().Background(theme.Current().Colors.Base)
+
 	// Add pagination message if present
 	paginationMsg := ""
 	if msg := s.pagination.Message(); msg != "" {
-		paginationMsg = "   " + sbPaginationMsgStyle().Render(" "+msg)
+		paginationMsg = baseSpace.Render("   ") + sbPaginationMsgStyle().Render(" "+msg)
 	}
 
 	// Calculate spacing to push position info to the right
@@ -184,11 +186,16 @@ func (s *StatusBar) View() string {
 		rightLen := lipgloss.Width(posInfo)
 		spaceNeeded := s.width - leftLen - rightLen - 2
 		if spaceNeeded > 0 {
-			spacing = strings.Repeat(" ", spaceNeeded)
+			spacing = baseSpace.Render(strings.Repeat(" ", spaceNeeded))
 		}
 	}
 
-	return leftContent + spacing + posInfo
+	line := leftContent + spacing + posInfo
+	bg := lipgloss.NewStyle().Background(theme.Current().Colors.Base)
+	if s.width > 0 {
+		return bg.Width(s.width).Render(line)
+	}
+	return bg.Render(line)
 }
 
 func (s *StatusBar) renderControls() string {
@@ -211,7 +218,8 @@ func (s *StatusBar) renderControls() string {
 	parts = append(parts, refreshBtn)
 	parts = append(parts, countBtn)
 
-	return strings.Join(parts, " ")
+	separator := lipgloss.NewStyle().Background(theme.Current().Colors.Base).Render(" ")
+	return strings.Join(parts, separator)
 }
 
 func (s *StatusBar) renderPositionInfo() string {
