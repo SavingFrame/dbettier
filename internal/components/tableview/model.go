@@ -51,10 +51,10 @@ func (m *TableViewModel) SetSize(width, height int) {
 	// Update status bar width for right-aligned content
 	m.statusBar.SetWidth(width)
 
-	// Update table height (leave some room for borders/padding and scroll indicators)
-	if height > 4 {
-		m.table.SetHeight(height - 4)
-	}
+	// Fill the available tableview area: table content + 1 status bar row.
+	// The surrounding border is already removed by the parent (borderedInner).
+	tableHeight := max(1, height-1)
+	m.table.SetHeight(tableHeight)
 }
 
 func (m *TableViewModel) GetSize() (int, int) {

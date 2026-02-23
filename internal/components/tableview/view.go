@@ -29,7 +29,17 @@ func (m TableViewModel) RenderContent() string {
 	if !m.data.HasQuery() {
 		return m.renderEmptyState()
 	}
-	return m.table.View() + "\n" + m.statusBar.View()
+
+	// Keep status bar pinned to the bottom by forcing the table body
+	// to occupy all available vertical space above it.
+	tableBodyHeight := max(1, m.viewport.Height()-1)
+	tableBody := lipgloss.NewStyle().
+		Width(max(0, m.viewport.Width())).
+		Height(tableBodyHeight).
+		Background(theme.Current().Colors.Base).
+		Render(m.table.View())
+
+	return tableBody + "\n" + m.statusBar.View()
 }
 
 func (m TableViewModel) renderEmptyState() string {

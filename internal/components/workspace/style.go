@@ -68,7 +68,7 @@ func inactiveTabStyle() lipgloss.Style {
 		Border(inactiveTabBorder(), true).
 		BorderForeground(colors.Border).
 		Foreground(colors.Subtle).
-		Background(colors.Surface).
+		Background(colors.Base).
 		Padding(0, 1)
 }
 
@@ -93,7 +93,7 @@ func closeButtonStyle(active bool) lipgloss.Style {
 	if active {
 		style = style.Foreground(colors.Error).Background(colors.Base)
 	} else {
-		style = style.Foreground(colors.Muted).Background(colors.Surface)
+		style = style.Foreground(colors.Muted).Background(colors.Base)
 	}
 	return style
 }
@@ -101,7 +101,7 @@ func closeButtonStyle(active bool) lipgloss.Style {
 // iconStyle returns the style for tab icons
 func iconStyle(tabType TabType, active bool) lipgloss.Style {
 	colors := theme.Current().Colors
-	bg := colors.Surface
+	bg := colors.Base
 	if active {
 		bg = colors.Base
 	}
@@ -121,7 +121,7 @@ func iconStyle(tabType TabType, active bool) lipgloss.Style {
 func tabNameStyle(active bool) lipgloss.Style {
 	colors := theme.Current().Colors
 	fg := colors.Subtle
-	bg := colors.Surface
+	bg := colors.Base
 	if active {
 		fg = colors.Text
 		bg = colors.Base
@@ -133,7 +133,7 @@ func tabNameStyle(active bool) lipgloss.Style {
 
 func tabSpaceStyle(active bool) lipgloss.Style {
 	colors := theme.Current().Colors
-	bg := colors.Surface
+	bg := colors.Base
 	if active {
 		bg = colors.Base
 	}
