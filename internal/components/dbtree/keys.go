@@ -17,6 +17,7 @@ type KeyMap struct {
 	Enter           key.Binding
 	Quit            key.Binding
 	OpenCommandBar  key.Binding
+	Escape          key.Binding
 }
 
 // DefaultKeyMap returns the default keybindings for the database tree
@@ -53,9 +54,13 @@ var DefaultKeyMap = KeyMap{
 		key.WithKeys("enter"),
 		key.WithHelp("enter", "open table"),
 	),
+	Escape: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "clear search / close command bar"),
+	),
 	Quit: key.NewBinding(
-		key.WithKeys("q", "esc"),
-		key.WithHelp("q/esc", "quit"),
+		key.WithKeys("q", "ctrl+c"),
+		key.WithHelp("q/ctrl+c", "quit"),
 	),
 	Search: key.NewBinding(
 		key.WithKeys("/"),

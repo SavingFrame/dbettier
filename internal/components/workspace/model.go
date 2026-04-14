@@ -10,7 +10,6 @@ import (
 	sqlcommandbarv2 "github.com/SavingFrame/dbettier/internal/components/sql_commandbar_v2"
 	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
-	"github.com/SavingFrame/dbettier/internal/messages"
 )
 
 // TabType represents the type of content in a tab
@@ -308,18 +307,4 @@ func (w *Workspace) ensureActiveTabVisible() {
 // SetScrollOffset sets the scroll offset (used by view calculations)
 func (w *Workspace) SetScrollOffset(offset int) {
 	w.scrollOffset = offset
-}
-
-// HandleOpenTable handles opening a table in a new tab
-func (w *Workspace) HandleOpenTable(msg messages.OpenTableAndExecuteMsg) tea.Cmd {
-	// Create new table tab
-	w.AddTableTab(msg.Table.Name, msg.DatabaseID)
-
-	// Return command to execute the table query on the new tab
-	return func() tea.Msg {
-		return messages.OpenTableAndExecuteMsg{
-			Table:      msg.Table,
-			DatabaseID: msg.DatabaseID,
-		}
-	}
 }

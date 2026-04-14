@@ -18,8 +18,8 @@ var DefaultKeyMap = KeyMap{
 		key.WithHelp("enter", "select row"),
 	),
 	Quit: key.NewBinding(
-		key.WithKeys("q", "esc"),
-		key.WithHelp("q/esc", "quit"),
+		key.WithKeys("q", "ctrl+c"),
+		key.WithHelp("q/ctrl+c", "quit"),
 	),
 	NextPage: key.NewBinding(
 		key.WithKeys("G"),

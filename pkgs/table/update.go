@@ -38,6 +38,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.searchMatchIndex = -1
 			return m, nil
 
+		case "esc":
+			m.searchMode = false
+			m.searchQuery = ""
+			m.searchMatches = nil
+			m.searchMatchIndex = -1
 		// Navigate to next search match
 		case "n":
 			if len(m.searchMatches) > 0 {

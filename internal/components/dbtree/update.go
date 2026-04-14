@@ -115,6 +115,8 @@ func (m DBTreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+		case key.Matches(msg, DefaultKeyMap.Escape):
+			m.search.Clear()
 		case key.Matches(msg, DefaultKeyMap.Quit):
 			return m, tea.Quit
 		}
