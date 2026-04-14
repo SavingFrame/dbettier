@@ -432,11 +432,11 @@ func (m rootScreenModel) View() tea.View {
 	if m.width > 0 && m.height > 0 {
 		// Use Canvas and Layers for compositing notification overlay
 		notifWidth := lipgloss.Width(notifView)
-		canvas := lipgloss.NewCanvas(
+		compositor := lipgloss.NewCompositor(
 			lipgloss.NewLayer(fullView),
 			lipgloss.NewLayer(notifView).X(m.width-notifWidth).Y(0),
 		)
-		v.SetContent(zone.Scan(canvas.Render()))
+		v.SetContent(zone.Scan(compositor.Render()))
 		return v
 	}
 
@@ -472,12 +472,12 @@ func (m rootScreenModel) renderWithHelpPopup(baseView string) string {
 	x = max(0, x)
 	y = max(0, y)
 
-	canvas := lipgloss.NewCanvas(
+	compositor := lipgloss.NewCompositor(
 		lipgloss.NewLayer(baseView),
 		lipgloss.NewLayer(helpPopup).X(x).Y(y),
 	)
 
-	return canvas.Render()
+	return compositor.Render()
 }
 
 func (m rootScreenModel) renderSplitLayout() string {
