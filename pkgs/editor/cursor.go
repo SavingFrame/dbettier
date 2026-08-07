@@ -100,8 +100,8 @@ func (c *editorCursor) moveRight(n int, buff *buffer) {
 }
 
 func (c *editorCursor) moveLastSymbol(lines []string) {
-	c.col = len(lines[c.row]) - 1
-	c.row = len(lines) - 1
+	c.col = min(len(lines[c.row])-1, 0)
+	c.row = min(len(lines)-1, 0)
 }
 
 func (c *editorCursor) gotoStartEdge(buff *buffer) {
