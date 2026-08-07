@@ -97,9 +97,32 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case "S":
 			return m.clearSort()
 		}
+	case tea.MouseWheelMsg:
+		m.handleMouseWheel(msg)
 	}
 
 	return m, nil
+}
+
+func (m *Model) handleMouseWheel(msg tea.MouseWheelMsg) {
+	switch msg.Button {
+	case tea.MouseWheelDown:
+		if msg.Mod.Contains(tea.ModShift) {
+			m.moveRight()
+			return
+		}
+		m.moveDown()
+	case tea.MouseWheelUp:
+		if msg.Mod.Contains(tea.ModShift) {
+			m.moveLeft()
+			return
+		}
+		m.moveUp()
+	case tea.MouseWheelLeft:
+		m.moveLeft()
+	case tea.MouseWheelRight:
+		m.moveRight()
+	}
 }
 
 // handleSearchInput handles key input during search mode.
