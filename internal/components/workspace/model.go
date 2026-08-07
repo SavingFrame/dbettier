@@ -7,7 +7,7 @@ import (
 	"log"
 
 	tea "charm.land/bubbletea/v2"
-	sqlcommandbarv2 "github.com/SavingFrame/dbettier/internal/components/sql_commandbar_v2"
+	"github.com/SavingFrame/dbettier/internal/components/sql_commandbar"
 	"github.com/SavingFrame/dbettier/internal/components/tableview"
 	"github.com/SavingFrame/dbettier/internal/database"
 )
@@ -31,7 +31,7 @@ type Tab struct {
 	Name          string
 	Type          TabType
 	TableView     tableview.TableViewModel
-	SQLCommandBar sqlcommandbarv2.SQLCommandBarModel
+	SQLCommandBar sqlcommandbar.SQLCommandBarModel
 	DatabaseID    string
 }
 
@@ -85,7 +85,7 @@ func (w *Workspace) AddQueryTab(databaseID string) {
 		Name:          fmt.Sprintf("Query %d", w.queryCounter),
 		Type:          TabTypeQuery,
 		TableView:     tableview.TableViewScreen(),
-		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry, databaseID, false), // TODO: Fix this shit
+		SQLCommandBar: sqlcommandbar.NewSQLCommandBarModel(nil, w.registry, databaseID, false), // TODO: Fix this shit
 	}
 	tab.TableView.SetSize(w.TableViewSize.width, w.TableViewSize.height)
 	tab.SQLCommandBar.SetSize(w.SQLCommandBarSize.width, w.SQLCommandBarSize.height)
@@ -101,7 +101,7 @@ func (w *Workspace) AddTableTab(tableName string, databaseID string) int {
 		Name:          tableName,
 		Type:          TabTypeTable,
 		TableView:     tableview.TableViewScreen(),
-		SQLCommandBar: sqlcommandbarv2.NewSQLCommandBarModel(nil, w.registry, databaseID, true),
+		SQLCommandBar: sqlcommandbar.NewSQLCommandBarModel(nil, w.registry, databaseID, true),
 	}
 	tab.TableView.SetSize(w.TableViewSize.width, w.TableViewSize.height)
 	tab.SQLCommandBar.SetSize(w.SQLCommandBarSize.width, w.SQLCommandBarSize.height)
@@ -240,7 +240,7 @@ func (w *Workspace) UpdateActiveTableView(msg tea.Msg) tea.Cmd {
 func (w *Workspace) UpdateActiveSQLCommandBar(msg tea.Msg) tea.Cmd {
 	if tab := w.ActiveTab(); tab != nil {
 		model, cmd := tab.SQLCommandBar.Update(msg)
-		tab.SQLCommandBar = model.(sqlcommandbarv2.SQLCommandBarModel)
+		tab.SQLCommandBar = model.(sqlcommandbar.SQLCommandBarModel)
 		return cmd
 	}
 	return nil

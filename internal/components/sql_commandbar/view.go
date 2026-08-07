@@ -1,4 +1,4 @@
-package sqlcommandbarv2
+package sqlcommandbar
 
 import tea "charm.land/bubbletea/v2"
 

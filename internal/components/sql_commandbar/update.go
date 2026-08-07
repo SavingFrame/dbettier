@@ -1,4 +1,4 @@
-package sqlcommandbarv2
+package sqlcommandbar
 
 import (
 	"charm.land/bubbles/v2/key"
@@ -13,7 +13,7 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, SQLCommandBarV2Keymap.Execute):
+		case key.Matches(msg, SQLCommandBarKeymap.Execute):
 			q := m.editor.GetContent()
 			return m, func() tea.Msg {
 				return messages.ExecuteSQLTextMsg{
