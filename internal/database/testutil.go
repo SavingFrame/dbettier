@@ -105,7 +105,7 @@ func SetupTestDatabase(t *testing.T) (*Database, func()) {
 		t.Fatalf("Failed to get container port: %v", err)
 	}
 
-	db := NewDatabase(host, "testuser", "testpass", port.Int(), "testdb")
+	db := NewDatabase(host, "testuser", "testpass", int(port.Num()), "testdb")
 
 	if err := db.Connect(); err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
