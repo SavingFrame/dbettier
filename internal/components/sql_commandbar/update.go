@@ -26,16 +26,29 @@ func (m SQLCommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case key.Matches(msg, SQLCommandBarKeymap.OpenNvim):
-			name, err := createTempBufferFile(&m.editor)
+			dir, err := createTempDir()
 			if err != nil {
-				return m, notifications.ShowError("Failed to connect to database: " + err.Error())
+				return m, notifications.ShowError("Failed to create temperary directory: " + err.Error())
 			}
-			cmd := exec.Command("nvim", name)
+			queryFile, err := createTempContentFile(dir, &m.editor)
+			if err != nil {
+				return m, notifications.ShowError("Failed to create temperary content file: " + err.Error())
+			}
+			_, err = createTempCredentialsFile(dir, *m.registry.GetByID(m.DatabaseID))
+			if err != nil {
+				return m, notifications.ShowError("Failed to create temperary credentails file: " + err.Error())
+			}
+			cmd := exec.Command("nvim", "--cmd", "lua vim.opt.runtimepath:prepend(vim.env.DBETTIER_NVIM_RUNTIME)", queryFile)
+			runtimeDir := "~/Projects/dbettier/resources/nvim"
+			cmd.Env = append(os.Environ(),
+				"DBETTIER_NVIM_RUNTIME="+runtimeDir,
+				"DBETTIER_PGLS_ROOT="+dir,
+			)
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
-				return messages.NvimFinishedMsg{Error: err, FileName: name}
+				return messages.NvimFinishedMsg{Error: err, FileName: queryFile}
 			})
 		}
 	case query.SQLResultMsg:
